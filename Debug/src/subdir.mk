@@ -12,7 +12,10 @@ CPP_SRCS += \
 ../src/EcSdoServices.cpp \
 ../src/EcSelectLinkLayer.cpp \
 ../src/EcSlaveInfo.cpp \
-../src/EcTimer.cpp 
+../src/EcTimer.cpp \
+../src/RTM_CompactController.cpp \
+../src/RTM_MainApp.cpp \
+../src/RTM_TestRun.cpp 
 
 OBJS += \
 ./src/EcDemoApp.o \
@@ -23,7 +26,10 @@ OBJS += \
 ./src/EcSdoServices.o \
 ./src/EcSelectLinkLayer.o \
 ./src/EcSlaveInfo.o \
-./src/EcTimer.o 
+./src/EcTimer.o \
+./src/RTM_CompactController.o \
+./src/RTM_MainApp.o \
+./src/RTM_TestRun.o 
 
 CPP_DEPS += \
 ./src/EcDemoApp.d \
@@ -34,7 +40,10 @@ CPP_DEPS += \
 ./src/EcSdoServices.d \
 ./src/EcSelectLinkLayer.d \
 ./src/EcSlaveInfo.d \
-./src/EcTimer.d 
+./src/EcTimer.d \
+./src/RTM_CompactController.d \
+./src/RTM_MainApp.d \
+./src/RTM_TestRun.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

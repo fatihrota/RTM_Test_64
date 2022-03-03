@@ -1,4 +1,5 @@
-src/EcDemoApp.o: ../src/EcDemoApp.cpp ../src/EcDemoApp.h \
+src/RTM_TestRun.o: ../src/RTM_TestRun.cpp ../src/RTM_TestRun.h \
+ ../src/EcDemoApp.h \
  C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/AtEthercat.h \
  C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/EcInterfaceCommon.h \
  C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/EcOs.h \
@@ -21,11 +22,12 @@ src/EcDemoApp.o: ../src/EcDemoApp.cpp ../src/EcDemoApp.h \
  C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/AtEmRasError.h \
  C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/AtEmRasType.h \
  C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/AtEmRasSrvVersion.h \
- ../src/DemoInline.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rtosLib.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc\Linux/rteOs.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h \
- ../src/RTM_MainApp.h ../src/RTM_TestRun.h ../src/RTM_CompactController.h
+ ../src/RTM_CompactController.h ../src/RTM_MainApp.h
+
+../src/RTM_TestRun.h:
 
 ../src/EcDemoApp.h:
 
@@ -81,16 +83,12 @@ C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/AtEmRasTy
 
 C:\Program\ Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC/AtEmRasSrvVersion.h:
 
-../src/DemoInline.h:
-
 C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rtosLib.h:
 
 C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc\Linux/rteOs.h:
 
 C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h:
 
-../src/RTM_MainApp.h:
-
-../src/RTM_TestRun.h:
-
 ../src/RTM_CompactController.h:
+
+../src/RTM_MainApp.h:
