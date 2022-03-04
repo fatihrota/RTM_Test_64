@@ -32,6 +32,7 @@
 /* Constants and macros                                                       */
 /*============================================================================*/
 
+#define MAX_SHM_SIZE	200
 
 /*============================================================================*/
 /* Type definitions                                                           */
@@ -68,6 +69,9 @@ public:
 	char semName_r[20];
 
 	pid_t pid;
+	key_t key;
+	int shmid;
+	void* shm;
 
 	std::vector<RTM_CompactController> ccVector;	/* Holds CC information */
 private:

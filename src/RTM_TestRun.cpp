@@ -22,6 +22,8 @@
  /*============================================================================*/
 #include "RTM_TestRun.h"
 #include "RTM_MainApp.h"
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 #define FORK 1
 
@@ -71,7 +73,21 @@ RTM_TestRun::~RTM_TestRun(){
 EC_T_VOID RTM_TestRun::createProcess(EC_T_VOID)
 {
 #if FORK
+	key = 1000 + testId;
 	std::string cmd = "/mnt/rtfiles/RTM_ProcessAPP"; // secondary program you want to run
+
+	if ((shmid = shmget(key,MAX_SHM_SIZE,IPC_CREAT | 0666)) < 0)
+	{
+		perror("shmget");
+		exit(1);
+	}
+
+	/* Now we attach the segment to our data space.*/
+	if ((shm = shmat(shmid, NULL, 0)) == (void*)-1) {
+
+		perror("shmat");
+		exit(1);
+	}
 
 	pid = fork(); // create child process
 
@@ -114,12 +130,21 @@ EC_T_VOID RTM_TestRun::createProcess(EC_T_VOID)
 
 }
 
+uint8_t counter = 0;
 /******************************************************************************/
 EC_T_VOID RTM_TestRun::trigerrProcess(EC_T_VOID)
 {
-	printf("T : %d\n", testId);
+	uint8_t *s = (uint8_t*)shm;
+	*s = counter;
+	*(s + 1) = counter + 1;
+	//*s++ = (char)(counter+1);
+	//*s++ = counter + 1 + '0';
+	printf("T : %d - %x - %x\n", testId, *s, *(s+1) );
+
 	if (sem_post(sem_id_w) < 0)
 		printf("Parent   : [sem_post] Failed \n");
+
+	counter++;
 }
 
 /******************************************************************************/
