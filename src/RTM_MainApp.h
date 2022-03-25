@@ -31,6 +31,7 @@
 /* Constants and macros                                                       */
 /*============================================================================*/
 
+#define NRTM_MSG_SIZE					1500
 #define MAX_ETHERCAT_MSG_SIZE			200
 #define ECAT_MSG_SIZE_PER_CC			21
 
@@ -58,25 +59,35 @@ public:
 
 	static void cleanInstance();
 
-	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_fromNRTM;
-	RTOSLIB_HANDLE          hQueue_fromNRTM  = NULL;
-	//MSG_DATA                MsgData = { { 0 } };
-	RTOSMSGQUEUE_INFO       Info_fromNRTM;
+	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_Data_fromNRTM;
+	RTOSLIB_HANDLE          hQueue_Data_fromNRTM  = NULL;
+	RTOSMSGQUEUE_INFO       Info_Data_fromNRTM;
 
-	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_fromRTM;
-	RTOSLIB_HANDLE          hQueue_fromRTM  = NULL;
-	//MSG_DATA_2                MsgData_2 = { { 0 } };
-	RTOSMSGQUEUE_INFO       Info_fromRTM;
+	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_Data_toNRTM;
+	RTOSLIB_HANDLE          hQueue_Data_toNRTM  = NULL;
+	RTOSMSGQUEUE_INFO       Info_Data_toNRTM;
+
+	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_Msg_fromNRTM;
+	RTOSLIB_HANDLE          hQueue_Msg_fromNRTM  = NULL;
+	RTOSMSGQUEUE_INFO       Info_Msg_fromNRTM;
+
+	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_Msg_toNRTM;
+	RTOSLIB_HANDLE          hQueue_Msg_toNRTM  = NULL;
+	RTOSMSGQUEUE_INFO       Info_Msg_toNRTM;
+
+	EC_T_VOID createTestThreads(EC_T_VOID* pvAppContext);
 
 	EC_T_VOID createMsgQueueWithNRTM(EC_T_VOID);
 	EC_T_VOID copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg);
 	EC_T_VOID takeDataFromMsgQueue(EC_T_VOID);
+	EC_T_VOID takeMsgFromMsgQueue(EC_T_VOID);
 	EC_T_VOID triggerTests(EC_T_VOID);
 	EC_T_VOID copySendBufferToEthercat(EC_T_BYTE* ecatMsg);
 	EC_T_BYTE sendEtherCatArray[MAX_ETHERCAT_MSG_SIZE];
 	EC_T_BYTE receivedEtherCatArray[MAX_ETHERCAT_MSG_SIZE];
 
 	EC_T_BYTE rcvSignalFromNRTM[MAX_ETHERCAT_MSG_SIZE];
+	EC_T_BYTE rcvMessageFromNRTM[NRTM_MSG_SIZE];
 
 	std::vector<RTM_TestRun> testVector;	/* Holds seperate tests */
 private:

@@ -53,6 +53,7 @@ public:
 	~RTM_TestRun();
 
 	EC_T_VOID*	testEvent;
+	EC_T_VOID*	recvEvent;
 	EC_T_INT 	testId;
 
 	EC_T_VOID parseReceivedEthercatBuffer(EC_T_VOID);

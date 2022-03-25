@@ -253,7 +253,7 @@ static EC_T_VOID tEcTimingTask(EC_T_VOID* pvThreadParamDesc)
 *
 * \return  Value 0 is returned.
 */
-int main(int nArgc, char* ppArgv[])
+int ECMaster_main(int nArgc, char* ppArgv[])
 {
     EC_T_DWORD               dwRetVal = EC_E_ERROR;
     EC_T_DWORD               dwRes = EC_E_ERROR;

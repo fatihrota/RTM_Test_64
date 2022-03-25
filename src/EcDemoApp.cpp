@@ -16,7 +16,7 @@ EC_T_VOID mainRun(EC_T_VOID* pvAppContext);
 #endif
 
 /*-DEFINES-------------------------------------------------------------------*/
-#define DCM_ENABLE_LOGFILE
+//#define DCM_ENABLE_LOGFILE
 
 #define JOB_ProcessAllRxFrames  0
 #define JOB_SendAllCycFrames    1
@@ -573,7 +573,7 @@ EC_T_DWORD EcMasterApp(T_EC_DEMO_APP_CONTEXT* pAppContext)
 				{
 					if (dwStatus != EC_E_NOERROR)
 					{
-						EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "DCM Status: %s (0x%08X)\n", ecatGetText(dwStatus), dwStatus));
+						EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "DCM Statusyyy: %s (0x%08X)\n", ecatGetText(dwStatus), dwStatus));
 					}
 				}
 				else
@@ -642,7 +642,6 @@ EC_T_DWORD EcMasterApp(T_EC_DEMO_APP_CONTEXT* pAppContext)
 		{
 			if ((eDcmMode_Off != pAppParms->eDcmMode) && (eDcmMode_LinkLayerRefClock != pAppParms->eDcmMode))
 			{
-				printf("DCM status \n");
 				EC_T_DWORD dwStatus = 0;
 				EC_T_BOOL  bWriteDiffLog = EC_FALSE;
 				EC_T_INT   nDiffCur = 0, nDiffAvg = 0, nDiffMax = 0;
@@ -662,7 +661,7 @@ EC_T_DWORD EcMasterApp(T_EC_DEMO_APP_CONTEXT* pAppContext)
 					}
 					if ((dwStatus != EC_E_NOTREADY) && (dwStatus != EC_E_BUSY) && (dwStatus != EC_E_NOERROR))
 					{
-						EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "DCM Status: %s (0x%08X)\n", ecatGetText(dwStatus), dwStatus));
+						EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "DCM Statusxxx: %s (0x%08X)\n", ecatGetText(dwStatus), dwStatus));
 					}
 					if (bWriteDiffLog && pAppParms->bDcmLogEnabled)
 					{
@@ -1039,6 +1038,24 @@ Exit:
 */
 static EC_T_DWORD myAppInit(T_EC_DEMO_APP_CONTEXT* pAppContext)
 {
+	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
+	//mainApp->createTestThreads(pAppContext);
+#if 0
+	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
+	UINT32 dwRetVal;
+
+	printf("My app Init");
+	EC_T_VOID*             pvJobTaskHandle   = EC_NULL;
+
+	mainApp->createMsgQueueWithNRTM();
+
+	pvJobTaskHandle = OsCreateThread((EC_T_CHAR*)"RTM_MainApp",
+				mainRun,
+				pAppContext->AppParms.CpuSet+1,
+				RTM_THREAD_PRIO,
+				JOBS_THREAD_STACKSIZE,
+				(EC_T_VOID*)pAppContext);
+#endif
 	return EC_E_NOERROR;
 }
 
@@ -1122,15 +1139,6 @@ Exit:
 */
 
 
-#define MSG_QUEUE_NAME		  TEXT("MsgQueueFromOStoRTOS")
-#define MSG_QUEUE_NAME_2      TEXT("MsgQueueFromRTOStoOS")
-#define MSG_NUM_WORDS       200
-
-	UINT8 awBuffer[MSG_NUM_WORDS];
-
-
-	UINT8 awBuffer_2[MSG_NUM_WORDS];
-
 #define EVENTDEMO_EVENT_TX      TEXT("EVENTDEMO_RTOS2WIN")
 #define EVENTDEMO_EVENT_RX      TEXT("EVENTDEMO_WIN2RTOS")
 
@@ -1138,31 +1146,8 @@ Exit:
 #define DEMO_REMOTE_READY       "DEMO_HOST_READY"
 
 
-RTOSMSGQUEUE_OPTIONS    MsgQueueOptions;
-RTOSLIB_HANDLE          hQueue  = NULL;
-//MSG_DATA                MsgData = { { 0 } };
-RTOSMSGQUEUE_INFO       Info;
-
-RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_2;
-RTOSLIB_HANDLE          hQueue_2  = NULL;
-//MSG_DATA_2                MsgData_2 = { { 0 } };
-RTOSMSGQUEUE_INFO       Info_2;
 static EC_T_DWORD myAppSetup(T_EC_DEMO_APP_CONTEXT* pAppContext)
 {
-	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
-	UINT32 dwRetVal;
-	
-	printf("My app setup");
-	EC_T_VOID*             pvJobTaskHandle   = EC_NULL;
-
-	pvJobTaskHandle = OsCreateThread((EC_T_CHAR*)"RTM_MainApp",
-			mainRun,
-			pAppContext->AppParms.CpuSet+1,
-			RTM_THREAD_PRIO,
-			JOBS_THREAD_STACKSIZE,
-			(EC_T_VOID*)pAppContext);
-
-	mainApp->createMsgQueueWithNRTM();
 	/*dwRetVal = RtosLibInit();
 	if (RTE_SUCCESS != dwRetVal)
 	{
@@ -1274,59 +1259,24 @@ static EC_T_DWORD myAppWorkpd(T_EC_DEMO_APP_CONTEXT* pAppContext)
 	EC_T_BYTE*     pbyPdOut   = ecatGetProcessImageOutputPtr();
 	EC_T_BYTE*     pbyPdIn   = ecatGetProcessImageInputPtr();
 	
-#if 0
-	Info_2.dwSize = sizeof(Info_2);
-	RtosMsgQueueInfoGet(hQueue_2, &Info_2);
-	if (Info_2.dwNumPending < 10)
-	{
-		UINT32 dwRetVal = RtosMsgQueueWrite(hQueue_2, (UINT8*)&pbyPdIn[0], MSG_NUM_WORDS, &dwNumData, 1);
-		printf("CC : %d - %d\n", pbyPdIn[0], dwNumData);
-		if (dwRetVal != RTE_SUCCESS)
-		{
-			printf("SQ : %d\n", dwRetVal);
+	struct timespec t;
+	OsMemset(&t, 0, sizeof(struct timespec));
+	/* get current time */
+	clock_gettime(CLOCK_MONOTONIC, &t);
 
-		}
-	}
-#endif
 	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
 	mainApp->copyRcvdEthercatMsgToBuffer(pbyPdIn);
 	mainApp->takeDataFromMsgQueue();
 	mainApp->triggerTests();
 	mainApp->copySendBufferToEthercat(pbyPdOut);
 
+	struct timespec t2;
+	OsMemset(&t2, 0, sizeof(struct timespec));
+	/* get current time */
+	clock_gettime(CLOCK_MONOTONIC, &t2);
 
-#if 0
-	Info.dwSize = sizeof(Info);
-	RtosMsgQueueInfoGet(hQueue, &Info);
-	if (Info.dwNumPending > 0)
-	{
-
-
-		UINT32 dwRetVal = RtosMsgQueueRead(hQueue, (UINT8*)&awBuffer[0], MSG_NUM_WORDS, &dwNumData, 1);
-		printf("NRTM : %d  - %d\n", awBuffer[0], dwNumData);
-
-		if (dwRetVal != RTE_SUCCESS)
-		{
-			printf("RQ : %d\n", dwRetVal);
-
-		}
-		else
-		{
-			// TODO: Size will be changed
-			//pbyPdOut = (UINT8*)&awBuffer[0];
-			memcpy((UINT8*)&pbyPdOut[0], (UINT8*)&awBuffer[0], 200);
-		}
-
-		if ((count - sendCount) > 1 )
-		{
-			printf("cycle error : %d\n", count - sendCount);
-			sendCount = count;
-		}
-
-		sendCount++;
-	}
-	count++;
-#endif
+	if ((t2.tv_sec-t.tv_sec) > 0 || (t2.tv_nsec-t.tv_nsec) > 100000)
+		printf("->%ld\n", (t2.tv_nsec-t.tv_nsec));
 
 #if 0
 

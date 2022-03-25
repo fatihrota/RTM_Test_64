@@ -62,6 +62,7 @@ extern "C" {
 
 RTM_TestRun::RTM_TestRun(){
 	testEvent = OsCreateEvent();
+	recvEvent = OsCreateEvent();
 }
 
 RTM_TestRun::~RTM_TestRun(){
@@ -104,6 +105,7 @@ EC_T_VOID RTM_TestRun::createProcess(EC_T_VOID)
 	{
 		std::string s = std::to_string(testId);
 		char const *pchar = s.c_str();  //use char const* as target type
+		printf("CMD : %s pchar : %s\n", cmd.c_str(), pchar);
 		execl(cmd.c_str(), pchar, (char *)NULL); // run the command
 		perror("execl"); // execl doesn't return unless there is a problem
 		exit(1);
@@ -139,7 +141,7 @@ EC_T_VOID RTM_TestRun::trigerrProcess(EC_T_VOID)
 	*(s + 1) = counter + 1;
 	//*s++ = (char)(counter+1);
 	//*s++ = counter + 1 + '0';
-	printf("T : %d - %x - %x\n", testId, *s, *(s+1) );
+	//printf("T : %d - %x - %x\n", testId, *s, *(s+1) );
 
 	if (sem_post(sem_id_w) < 0)
 		printf("Parent   : [sem_post] Failed \n");
@@ -150,7 +152,7 @@ EC_T_VOID RTM_TestRun::trigerrProcess(EC_T_VOID)
 /******************************************************************************/
 EC_T_VOID RTM_TestRun::waitForProcess(EC_T_VOID)
 {
-	printf("W : %d\n", testId);
+	//printf("W : %d\n", testId);
 	if (sem_wait(sem_id_r) < 0)
 		printf("Parent  : [sem_wait] Failed\n");
 }
@@ -165,7 +167,7 @@ EC_T_VOID RTM_TestRun::parseReceivedCommand(EC_T_VOID)
 {
 	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
 	//printf("rcv cmd %d\n", mainApp->testVector[testId].ccVector.size());
-	for(int idx=0; idx < mainApp->testVector[testId].ccVector.size(); idx++)
+	for(unsigned int idx=0; idx < mainApp->testVector[testId].ccVector.size(); idx++)
 	{
 		memcpy(&(mainApp->testVector[testId].ccVector[idx].cmdBuffer[0]), &(mainApp->rcvSignalFromNRTM[mainApp->testVector[testId].ccVector[idx].offsetInBuffer]), ECAT_MSG_SIZE_PER_CC);
 
@@ -177,7 +179,7 @@ EC_T_VOID RTM_TestRun::commandPlayer(EC_T_VOID)
 {
 	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
 	//printf("cmd %d\n", testId);
-	for(int idx=0; idx < mainApp->testVector[testId].ccVector.size(); idx++)
+	for(unsigned int idx=0; idx < mainApp->testVector[testId].ccVector.size(); idx++)
 	{
 		memcpy(&(mainApp->sendEtherCatArray[mainApp->testVector[testId].ccVector[idx].offsetInBuffer]), &(mainApp->testVector[testId].ccVector[idx].cmdBuffer[0]), ECAT_MSG_SIZE_PER_CC);
 	}
@@ -200,6 +202,7 @@ EC_T_VOID testRun(EC_T_VOID* testIdx)
 		mainApp->testVector[tIdx].waitForProcess();
 		mainApp->testVector[tIdx].parseReceivedCommand();
 		mainApp->testVector[tIdx].commandPlayer();
+		OsSetEvent(mainApp->testVector[tIdx].recvEvent);
 	}
 
 }
