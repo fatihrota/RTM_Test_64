@@ -27,6 +27,7 @@
 #include <cstring>
 #include "RTM_MainApp.h"
 #include "json.hpp"
+#include "RtosComm.h"
 
 /*============================================================================*/
 /* Forward declarations                                                       */
@@ -35,11 +36,6 @@
 /*============================================================================*/
 /* Constants and macros                                                       */
 /*============================================================================*/
-
-#define MSG_QUEUE_DATA_NRTM_TO_RTM		  	TEXT("MsgQueue_Data_FromNRTMtoRTM")
-#define MSG_QUEUE_DATA_RTM_TO_NRTM         	TEXT("MsgQueue_Data_FromRTMtoNRTM")
-
-#define MSG_NUM_WORDS       			200
 
 /*============================================================================*/
 /* Type definitions                                                           */
@@ -152,8 +148,6 @@ EC_T_VOID RTM_MainApp::createTestThreads(EC_T_VOID* pvAppContext)
 	printf("Test Vector 4 CC Size : %d\n", mainApp->testVector[4].ccVector.size());
 
 
-	printf("Message data size : %d header size : %d footere size : %d", NRTM_MSG_SIZE, sizeof(msg_header), sizeof(msg_footer));
-
 	for (EC_T_UINT idx = 0; idx < mainApp->testVector.size(); idx++)
 	{
 		mainApp->testVector[idx].createProcess();
@@ -178,148 +172,29 @@ EC_T_VOID mainRun(EC_T_VOID* pvAppContext)
 {
 	T_EC_DEMO_APP_CONTEXT *demoAppTmp = static_cast<T_EC_DEMO_APP_CONTEXT *>(pvAppContext);
 	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
+	RtosComm *rtmComm = RtosComm::getInstance();
 
-	mainApp->createMsgQueueWithNRTM();
-	mainApp->createSocketWithNRTM();
+	rtmComm->libInit();
+	rtmComm->create_Data_ReceiveMessageQueue();
+	rtmComm->create_Data_SendMessageQueue();
+	rtmComm->createSocket();
+	rtmComm->bindSocket();
+	rtmComm->listenSocket();
 
 	while(1)
 	{
-		if (!mainApp->nrtmConnected)
+		if (!rtmComm->connectedRTOS)
 		{
-			mainApp->acceptNRTM();
+			rtmComm->acceptClient();
 		}
 		else
 		{
-			mainApp->takeMsgFromNRTM();
+			rtmComm->receiveMessage();
 		}
 		OsSleep(1000);
 	}
 }
 
-
-/******************************************************************************/
-EC_T_VOID RTM_MainApp::createMsgQueueWithNRTM(EC_T_VOID)
-{
-	UINT32 dwRetVal;
-
-	dwRetVal = RtosLibInit();
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ERROR initializing RTOS Library\n"));
-	}
-
-	MsgQueueOptions_Data_fromNRTM.dwSize                  = sizeof(MsgQueueOptions_Data_fromNRTM);
-	MsgQueueOptions_Data_fromNRTM.dwFlags                 = RTOSMSGQUEUE_OPTIONS_FLAG_ALLOWBROKEN;
-	MsgQueueOptions_Data_fromNRTM.dwNumMessages           = 10000;
-	MsgQueueOptions_Data_fromNRTM.dwMsgDataSizeInBytes    = MSG_NUM_WORDS;
-	MsgQueueOptions_Data_fromNRTM.bReadAccess             = TRUE;
-	dwRetVal = RtosMsgQueueCreate(MSG_QUEUE_DATA_NRTM_TO_RTM, &MsgQueueOptions_Data_fromNRTM, &hQueue_Data_fromNRTM);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ERROR Create MSQ %s - %d\n", MSG_QUEUE_DATA_NRTM_TO_RTM, dwRetVal));
-	}
-
-	MsgQueueOptions_Data_toNRTM.dwSize                  = sizeof(MsgQueueOptions_Data_toNRTM);
-	MsgQueueOptions_Data_toNRTM.dwFlags                 = RTOSMSGQUEUE_OPTIONS_FLAG_ALLOWBROKEN;
-	MsgQueueOptions_Data_toNRTM.dwNumMessages           = 10;
-	MsgQueueOptions_Data_toNRTM.dwMsgDataSizeInBytes    = MSG_NUM_WORDS;
-	MsgQueueOptions_Data_toNRTM.bReadAccess             = FALSE;
-	dwRetVal = RtosMsgQueueCreate(MSG_QUEUE_DATA_RTM_TO_NRTM, &MsgQueueOptions_Data_toNRTM, &hQueue_Data_toNRTM);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ERROR Create MSQ %s - %d\n", MSG_QUEUE_DATA_RTM_TO_NRTM, dwRetVal));
-	}
-
-	printf( "MSQs are Created\n");
-}
-
-#if 0
-/******************************************************************************/
-EC_T_VOID RTM_MainApp::createSocketWithNRTM(EC_T_VOID)
-{
-	UINT32          dwRetVal = 0;
-
-	dwRetVal = RtosSocketCreate( RTOSSOCKET_FAMILY_RTE, RTOSSOCKET_TYPE_STREAM, RTOSSOCKET_PROTOCOL_TCP, &hSocket );
-	if( RTE_SUCCESS != dwRetVal )
-	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, " %-28s : Error RtosSocketCreate (0x%X)\n", "Server Tcp", dwRetVal));
-	}
-}
-#endif
-
-/******************************************************************************/
-EC_T_VOID RTM_MainApp::createSocketWithNRTM(EC_T_VOID)
-{
-	UINT32          dwRetVal = 0;
-
-	dwRetVal = RtosSocketCreate( RTOSSOCKET_FAMILY_RTE, RTOSSOCKET_TYPE_STREAM, RTOSSOCKET_PROTOCOL_TCP, &hSocket );
-	if( RTE_SUCCESS != dwRetVal )
-	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, " %-28s : Error RtosSocketCreate (0x%X)\n", "Server Tcp", dwRetVal));
-	}
-
-	dwRetVal = RtosSocketBind(hSocket, SERVER_PORT);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, " %-28s : Error RtosSocketBind (0x%X)\n", "Server Tcp", dwRetVal));
-
-	}
-
-	dwRetVal = RtosSocketListen(hSocket);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, " %-28s : Error RtosSocketListen (0x%X)\n", "Server Tcp", dwRetVal));
-	}
-}
-
-#if 0
-/******************************************************************************/
-EC_T_VOID RTM_MainApp::connectNRTM(EC_T_VOID)
-{
-	UINT32          dwRetVal = 0;
-	RTOSSOCKET_ADDR     Addr;
-
-	Addr.bySize         = sizeof(RTOSSOCKET_ADDR);
-	Addr.byFamily       = RTOSSOCKET_FAMILY_RTE;
-	Addr.wPort          = SERVER_PORT;
-	Addr.u.Rte.dwOsId   = SERVER_OSID;
-	dwRetVal = RtosSocketConnect( hSocket, &Addr );
-	if( RTE_SUCCESS != dwRetVal )
-	{
-		//EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, " %-28s : Error RtosSocketConnect (0x%X)\n", "Server Tcp", dwRetVal));
-		printf("not connected\n");
-		nrtmConnected = 0;
-	}
-	else
-	{
-		printf("connected\n");
-		nrtmConnected = 1;
-	}
-
-}
-#endif
-/******************************************************************************/
-EC_T_VOID RTM_MainApp::acceptNRTM(EC_T_VOID)
-{
-	UINT32          dwRetVal;
-	RTOSSOCKET_ADDR AddrNew;
-	AddrNew.bySize = sizeof(RTOSSOCKET_ADDR);
-	dwRetVal = RtosSocketAccept(hSocket, &hSocketClient, &AddrNew, 1000);
-	switch (RTE_ERROR_GET_ERROR(dwRetVal))
-	{
-	case RTE_SUCCESS:
-		printf("Client accepted\n");
-		nrtmConnected = 1;
-		break;
-	case RTE_ERROR_TIMEOUT:
-		nrtmConnected = 0;
-		break;
-	default:
-		nrtmConnected = 0;
-		break;
-	}
-
-}
 
 /******************************************************************************/
 uint8_t tmpRcvd = 0;
@@ -356,7 +231,7 @@ EC_T_VOID RTM_MainApp::copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg)
 EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 {
 	UINT32                  dwNumData;
-	memset((UINT8*)&rcvSignalFromNRTM[0], 0, MSG_NUM_WORDS);
+	memset((UINT8*)&rcvSignalFromNRTM[0], 0, MAX_ETHERCAT_MSG_SIZE);
 
 	Info_Data_fromNRTM.dwSize = sizeof(Info_Data_fromNRTM);
 	RtosMsgQueueInfoGet(hQueue_Data_fromNRTM, &Info_Data_fromNRTM);
@@ -364,7 +239,7 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 	//printf("Pending : %d\n", Info_fromNRTM.dwNumPending);
 	if (Info_Data_fromNRTM.dwNumPending > 0)
 	{
-		UINT32 dwRetVal = RtosMsgQueueRead(hQueue_Data_fromNRTM, (UINT8*)&rcvSignalFromNRTM[0], MSG_NUM_WORDS, &dwNumData, 1);
+		UINT32 dwRetVal = RtosMsgQueueRead(hQueue_Data_fromNRTM, (UINT8*)&rcvSignalFromNRTM[0], MAX_ETHERCAT_MSG_SIZE, &dwNumData, 1);
 		if (dwRetVal != RTE_SUCCESS)
 		{
 			printf("RQ : %d\n", dwRetVal);
@@ -375,104 +250,6 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 	}
 }
 
-#define NONE	0
-/******************************************************************************/
-int RTM_MainApp::takeMsgFromNRTM(EC_T_VOID)
-{
-	UINT32  dwRetVal;
-	UINT32  dwRes;
-	UINT32  dwBytesToRead   = NRTM_MESSAGE_TOTAL_SIZE;
-	UINT32  dwBytesRead     = 0;
-	UINT32  dwBytesReadNew;
-
-	dwRes = RtosSocketRecv( hSocketClient, &rtosRcvArray[dwBytesRead], (dwBytesToRead-dwBytesRead), &dwBytesReadNew );
-
-	if (!dwBytesReadNew)
-	{
-		return 0;
-	}
-
-	memcpy(&((UINT8*)&nrtmMsg)[0], &rtosRcvArray[0], sizeof(nrtmMsg.header));
-	printf("Rcvd datalen : %d - %d\n" ,nrtmMsg.header.dataLen, dwBytesReadNew);
-
-	if (nrtmMsg.header.isFragment || (nrtmMsg.header.dataLen + sizeof(msg_header)) != dwBytesReadNew)
-	{
-		printf("Msg is fragmented\n");
-	}
-
-	nrtmMsg.msg = (uint8_t *)malloc(nrtmMsg.header.dataLen * sizeof(uint8_t));
-
-	memcpy(&nrtmMsg.msg[0], &rtosRcvArray[sizeof(msg_header)], nrtmMsg.header.dataLen);
-
-	char str[13 + 1];
-	memcpy(str, &nrtmMsg.msg[0], nrtmMsg.header.dataLen);
-	str[nrtmMsg.header.dataLen] = 0;
-	printf("%s\n", str);
-
-
-	nrtm_msg helloAck;
-	helloAck.header.ccID = NONE;
-	helloAck.header.cmd = 2;
-	helloAck.header.fragmentNo = NONE;
-	helloAck.header.isACK = 0;
-	helloAck.header.isFragment = NONE;
-	helloAck.header.msgID = 99;
-	helloAck.header.nrtmID = 1;
-	helloAck.header.rtmID = 1;
-	helloAck.header.startByte = 0x03;
-	helloAck.header.testID = NONE;
-	helloAck.header.timestamp = 1;
-
-	json helloJson;
-	helloJson["msg"] = "HelloACKFromRTM";
-	std::string helloMsg = helloJson.dump();
-
-	helloAck.msg = (uint8_t *)malloc(helloMsg.length() * sizeof(uint8_t));
-
-	memcpy(&helloAck.msg[0], helloMsg.data(), helloMsg.length());
-	helloAck.header.dataLen = helloMsg.length();
-
-	UINT32 dwWritten = 0;
-	int datalen = helloAck.header.dataLen + sizeof(msg_header);
-	memcpy(rtosSendArray, (uint8_t *)&helloAck, sizeof(msg_header));
-	memcpy(&rtosSendArray[sizeof(msg_header)], (uint8_t *)&helloAck.msg[0], helloAck.header.dataLen);
-
-
-	dwRetVal = RtosSocketSend(hSocketClient, (UINT8*)&rtosSendArray[0], datalen, &dwWritten);
-
-
-
-#if 0
-	/* Read data */
-	do
-	{
-		dwBytesReadNew = 0;
-		dwRes = RtosSocketRecv( hSocket, &((UINT8*)&nrtmMsg)[dwBytesRead], (dwBytesToRead-dwBytesRead), &dwBytesReadNew );
-
-		switch( RTE_ERROR_GET_ERROR( dwRes ) )
-		{
-		case RTE_SUCCESS:
-			break;
-		case RTE_ERROR_TIMEOUT:
-			printf(("  Rx: Timeout\n") );
-			break;
-		default:
-			printf((" Rx: Error (0x%X)\n"), dwRes );
-			break;
-		}
-		if( RTE_SUCCESS != dwRes )
-		{
-			printf("Error");
-			return RTE_ERROR;
-		}
-		dwBytesRead += dwBytesReadNew;
-	} while( dwBytesRead < dwBytesToRead );
-#endif
-
-
-	return RTE_SUCCESS;
-
-}
 /******************************************************************************/
 EC_T_VOID RTM_MainApp::triggerTests(EC_T_VOID)
 {
@@ -509,16 +286,33 @@ EC_T_VOID RTM_MainApp::copySendBufferToEthercat(EC_T_BYTE* ecatMsg)
 	memcpy((UINT8*)&ecatMsg[0], &sendEtherCatArray[0], MAX_ETHERCAT_MSG_SIZE);
 }
 
+/******************************************************************************/
+EC_T_VOID shutdownApp(EC_T_VOID)
+{
+	RtosComm *rtmComm = RtosComm::getInstance();
+
+	UINT32 dwRes = 0;
+	if (rtmComm->hSocketClient != NULL)
+	{
+		dwRes = RtosSocketClose( rtmComm->hSocketClient );
+		rtmComm->hSocketClient = NULL;
+	}
+
+	if (rtmComm->hSocket != NULL)
+	{
+		dwRes = RtosSocketClose( rtmComm->hSocket );
+		rtmComm->hSocket = NULL;
+	}
+
+}
+
 extern int ECMaster_main(int nArgc, char* ppArgv[]);
 extern volatile EC_T_BOOL  bRun;
 /******************************************************************************/
 int main(int nArgc, char* ppArgv[])
 {
 	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
-	UINT32 dwRetVal;
-
-	printf("My app Init\n");
-	EC_T_VOID*             pvJobTaskHandle   = EC_NULL;
+	EC_T_VOID* pvJobTaskHandle   = EC_NULL;
 
 	pvJobTaskHandle = OsCreateThread((EC_T_CHAR*)"RTM_MainApp",
 					mainRun,
@@ -535,18 +329,7 @@ int main(int nArgc, char* ppArgv[])
 		OsSleep(1000);
 	}
 
-	UINT32          dwRes;
-	if (mainApp->hSocketClient != NULL)
-	{
-		dwRes = RtosSocketClose( mainApp->hSocketClient );
-		mainApp->hSocketClient = NULL;
-	}
-
-	if (mainApp->hSocket != NULL)
-	{
-		dwRes = RtosSocketClose( mainApp->hSocket );
-		mainApp->hSocket = NULL;
-	}
+	shutdownApp();
 }
 
 /**@}*/

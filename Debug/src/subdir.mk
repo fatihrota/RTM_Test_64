@@ -15,7 +15,9 @@ CPP_SRCS += \
 ../src/EcTimer.cpp \
 ../src/RTM_CompactController.cpp \
 ../src/RTM_MainApp.cpp \
-../src/RTM_TestRun.cpp 
+../src/RTM_TestRun.cpp \
+../src/RtosComm.cpp \
+../src/RtosMessage.cpp 
 
 OBJS += \
 ./src/EcDemoApp.o \
@@ -29,7 +31,9 @@ OBJS += \
 ./src/EcTimer.o \
 ./src/RTM_CompactController.o \
 ./src/RTM_MainApp.o \
-./src/RTM_TestRun.o 
+./src/RTM_TestRun.o \
+./src/RtosComm.o \
+./src/RtosMessage.o 
 
 CPP_DEPS += \
 ./src/EcDemoApp.d \
@@ -43,7 +47,9 @@ CPP_DEPS += \
 ./src/EcTimer.d \
 ./src/RTM_CompactController.d \
 ./src/RTM_MainApp.d \
-./src/RTM_TestRun.d 
+./src/RTM_TestRun.d \
+./src/RtosComm.d \
+./src/RtosMessage.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

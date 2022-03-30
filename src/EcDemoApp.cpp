@@ -12,7 +12,6 @@
 #define myApp
 #ifdef myApp
 #include "RTM_MainApp.h"
-EC_T_VOID mainRun(EC_T_VOID* pvAppContext);
 #endif
 
 /*-DEFINES-------------------------------------------------------------------*/
@@ -828,6 +827,7 @@ Exit:
 	return dwRetVal;
 }
 
+extern uint8_t ethercatPause;
 /********************************************************************************/
 /** \brief  Trigger jobs to drive master, and update process data.
 *
@@ -849,6 +849,14 @@ static EC_T_VOID EcMasterJobTask(EC_T_VOID* pvAppContext)
 	{
 		/* wait for next cycle (event from scheduler task) */
 		OsWaitForEvent(pAppContext->pvJobTaskEvent, EC_WAITINFINITE);
+
+		if (ethercatPause)
+		{
+			EC_T_USER_JOB_PARMS oJobParms;
+			OsMemset(&oJobParms, 0, sizeof(EC_T_USER_JOB_PARMS));
+			continue;
+		}
+
 
 		PERF_JOB_END(PERF_CycleTime);
 		PERF_JOB_START(PERF_CycleTime);
@@ -1038,24 +1046,6 @@ Exit:
 */
 static EC_T_DWORD myAppInit(T_EC_DEMO_APP_CONTEXT* pAppContext)
 {
-	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
-	//mainApp->createTestThreads(pAppContext);
-#if 0
-	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
-	UINT32 dwRetVal;
-
-	printf("My app Init");
-	EC_T_VOID*             pvJobTaskHandle   = EC_NULL;
-
-	mainApp->createMsgQueueWithNRTM();
-
-	pvJobTaskHandle = OsCreateThread((EC_T_CHAR*)"RTM_MainApp",
-				mainRun,
-				pAppContext->AppParms.CpuSet+1,
-				RTM_THREAD_PRIO,
-				JOBS_THREAD_STACKSIZE,
-				(EC_T_VOID*)pAppContext);
-#endif
 	return EC_E_NOERROR;
 }
 
@@ -1148,98 +1138,6 @@ Exit:
 
 static EC_T_DWORD myAppSetup(T_EC_DEMO_APP_CONTEXT* pAppContext)
 {
-	/*dwRetVal = RtosLibInit();
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("Error(0x%X)\r\n"), dwRetVal);
-	}*/
-
-
-#if 0	
-	RTOSLIB_HANDLE hEventLocalReady = NULL;
-	RTOSLIB_HANDLE hEventRemoteReady = NULL;
-	
-	/* Wait for demo counterpart */
-	DEMO_PRINTF(TEXT("  %-28s : "), TEXT("Waiting for demo counterpart"));
-	dwRetVal = RtosCreateEvent(FALSE, FALSE, TEXT(DEMO_LOCAL_READY), &hEventLocalReady);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("RtosCreateEvent %s error 0x%X\n"), TEXT(DEMO_LOCAL_READY), dwRetVal);
-	}
-	dwRetVal = RtosCreateEvent(FALSE, FALSE, TEXT(DEMO_REMOTE_READY), &hEventRemoteReady);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("RtosCreateEvent %s error 0x%X\n"), TEXT(DEMO_REMOTE_READY), dwRetVal);
-	}
-	dwRetVal = RtosSetEvent(hEventLocalReady);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("RtosSetEvent %s error 0x%X\n"), TEXT(DEMO_LOCAL_READY), dwRetVal);
-	}
-	do 
-	{
-		dwRetVal = RtosWaitForEvent(hEventRemoteReady, RTOS_WAIT_INFINITE);
-		switch (dwRetVal)
-		{
-		case RTE_SUCCESS:
-			DEMO_PRINTF(TEXT("Ok\n"));
-			break;
-		case RTE_ERROR_TIMEOUT:
-			break;
-		default:
-			DEMO_PRINTF(TEXT("RtosWaitForEvent %s error 0x%X\n"), TEXT(DEMO_REMOTE_READY), dwRetVal);
-			break;
-		}
-	} while (RTE_ERROR_TIMEOUT == RTE_ERROR_GET_ERROR(dwRetVal));
-	
-	
-
-	RTOSLIB_HANDLE hEventRx = NULL;
-	RTOSLIB_HANDLE hEventTx = NULL;
-	dwRetVal = RtosCreateEvent(FALSE, FALSE, EVENTDEMO_EVENT_TX, &hEventTx);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("RtosCreateEvent %s error 0x%X\n"), EVENTDEMO_EVENT_TX, dwRetVal);
-	}
-	dwRetVal = RtosCreateEvent(FALSE, FALSE, EVENTDEMO_EVENT_RX, &hEventRx);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("RtosCreateEvent %s error 0x%X\n"), EVENTDEMO_EVENT_RX, dwRetVal);
-	}
-	dwRetVal = RtosSetEvent(hEventTx);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("RtosSetEvent %s error 0x%X\n"), EVENTDEMO_EVENT_TX, dwRetVal);
-	}
-	
-	do 
-	{
-		printf("Wait for event\n");
-		dwRetVal = RtosWaitForEvent(hEventRx, 1000);
-		switch (dwRetVal)
-		{
-		case RTE_SUCCESS:
-			DEMO_PRINTF(TEXT("Ok\n"));
-			break;
-		case RTE_ERROR_TIMEOUT:
-			DEMO_PRINTF(TEXT("Timeout\n"));
-			break;
-		default:
-			DEMO_PRINTF(TEXT("RtosWaitForEvent %s error 0x%X\n"), EVENTDEMO_EVENT_RX, dwRetVal);
-			break;
-		}
-	} while (RTE_ERROR_TIMEOUT == RTE_ERROR_GET_ERROR(dwRetVal));
-	
-	dwRetVal = RtosSetEvent(hEventTx);
-	if (RTE_SUCCESS != dwRetVal)
-	{
-		DEMO_PRINTF(TEXT("RtosSetEvent %s error 0x%X\n"), EVENTDEMO_EVENT_TX, dwRetVal);
-	}
-	
-	dwRetVal = RtosCloseEvent(hEventTx);
-	dwRetVal = RtosCloseEvent(hEventRx);
-#endif
-
 
 	return EC_E_NOERROR;
 }

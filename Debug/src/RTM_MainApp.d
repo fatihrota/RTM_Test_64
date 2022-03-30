@@ -25,8 +25,9 @@ src/RTM_MainApp.o: ../src/RTM_MainApp.cpp ../src/RTM_MainApp.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rtosLib.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc\Linux/rteOs.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h \
- ../src/RTM_TestRun.h ../src/RTM_CompactController.h ../src/RTM_Message.h \
- ../src/json.hpp
+ ../src/RTM_TestRun.h ../src/RTM_CompactController.h ../src/json.hpp \
+ ../src/RtosComm.h \
+ C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/RtosLib.h
 
 ../src/RTM_MainApp.h:
 
@@ -94,6 +95,8 @@ C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h:
 
 ../src/RTM_CompactController.h:
 
-../src/RTM_Message.h:
-
 ../src/json.hpp:
+
+../src/RtosComm.h:
+
+C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/RtosLib.h:

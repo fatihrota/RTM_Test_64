@@ -23,7 +23,6 @@
 #include "EcDemoApp.h"
 #include <rtosLib.h>
 #include "RTM_TestRun.h"
-#include "RTM_Message.h"
 /*============================================================================*/
 /* Forward declarations                                                       */
 /*============================================================================*/
@@ -32,14 +31,9 @@
 /* Constants and macros                                                       */
 /*============================================================================*/
 
-#define MAX_ETHERCAT_MSG_SIZE			200
 #define ECAT_MSG_SIZE_PER_CC			21
 
-#define MSG_SIGNATURE               0x08150816
-#define SOCKET_MSG_SIZE               4000
-
-#define SERVER_OSID                 0 /* OS 0 = Rtos */
-#define SERVER_PORT                 6
+#define MAX_ETHERCAT_MSG_SIZE		200
 /*============================================================================*/
 /* Type definitions                                                           */
 /*============================================================================*/
@@ -72,20 +66,8 @@ public:
 	RTOSLIB_HANDLE          hQueue_Data_toNRTM  = NULL;
 	RTOSMSGQUEUE_INFO       Info_Data_toNRTM;
 
-	RTOSLIB_HANDLE  hSocket       = NULL;
-	RTOSLIB_HANDLE  hSocketClient    = NULL;
-
-	uint8_t nrtmConnected = 0;
-
-	EC_T_VOID acceptNRTM(EC_T_VOID);
 	EC_T_VOID createTestThreads(EC_T_VOID* pvAppContext);
-	EC_T_VOID createSocketWithNRTM(EC_T_VOID);
-	int takeMsgFromNRTM(EC_T_VOID);
-	UINT32 DataRx(RTOSLIB_HANDLE hSocket,PRTOSSOCKET_ADDR pAddrFrom,BOOL bClient,TCHAR* szMsgSrc);
-	UINT32 DataParse(BOOL bClient,TCHAR* szMsgSrc);
-	EC_T_VOID connectNRTM(EC_T_VOID);
 
-	EC_T_VOID createMsgQueueWithNRTM(EC_T_VOID);
 	EC_T_VOID copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg);
 	EC_T_VOID takeDataFromMsgQueue(EC_T_VOID);
 	EC_T_VOID triggerTests(EC_T_VOID);
@@ -94,10 +76,6 @@ public:
 	EC_T_BYTE receivedEtherCatArray[MAX_ETHERCAT_MSG_SIZE];
 
 	EC_T_BYTE rcvSignalFromNRTM[MAX_ETHERCAT_MSG_SIZE];
-
-	nrtm_msg    nrtmMsg   = {0};
-	uint8_t rtosSendArray[NRTM_MESSAGE_TOTAL_SIZE];
-	uint8_t rtosRcvArray[NRTM_MESSAGE_TOTAL_SIZE];
 
 	std::vector<RTM_TestRun> testVector;	/* Holds seperate tests */
 private:

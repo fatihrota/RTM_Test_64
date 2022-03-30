@@ -75,7 +75,7 @@ EC_T_VOID RTM_TestRun::createProcess(EC_T_VOID)
 {
 #if FORK
 	key = 1000 + testId;
-	std::string cmd = "/mnt/rtfiles/RTM_ProcessAPP"; // secondary program you want to run
+	std::string cmd = "/tmp/RTM_ProcessAPP"; // secondary program you want to run
 
 	if ((shmid = shmget(key,MAX_SHM_SIZE,IPC_CREAT | 0666)) < 0)
 	{
