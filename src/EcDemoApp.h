@@ -13,6 +13,8 @@
 #define pEcLogParms (&(pAppContext->LogParms))
 #endif
 
+#define INCLUDE_EC_MASTER
+
 /*-INCLUDES------------------------------------------------------------------*/
 #include "AtEthercat.h"
 #include "EcDemoPlatform.h"
@@ -27,10 +29,11 @@
 #define EC_DEMO_APP_NAME (EC_T_CHAR*)"EcMasterDemoDc"
 
 /* the RAS server is necessary to support the EC-Engineer or other remote applications */
-#if (!defined ATEMRAS_SERVER) && (defined EC_SOCKET_SUPPORTED)
-#define ATEMRAS_SERVER
+#if (!defined INCLUDE_RAS_SERVER) && (defined EC_SOCKET_SUPPORTED)
+#define INCLUDE_RAS_SERVER
 #endif
-#if (defined ATEMRAS_SERVER)
+
+#if (defined INCLUDE_RAS_SERVER)
 #include "AtEmRasSrv.h"
 #define ATEMRAS_MAX_WATCHDOG_TIMEOUT    10000
 #define ATEMRAS_CYCLE_TIME              2
@@ -71,7 +74,9 @@
 EC_T_VOID  ShowSyntaxAppUsage(T_EC_DEMO_APP_CONTEXT* pAppContext);
 EC_T_VOID  ShowSyntaxApp(T_EC_DEMO_APP_CONTEXT* pAppContext);
 EC_T_VOID  ShowSyntaxLinkLayer(EC_T_VOID);
-EC_T_DWORD EcMasterApp(T_EC_DEMO_APP_CONTEXT* pAppContext);
+EC_T_DWORD EcDemoApp(T_EC_DEMO_APP_CONTEXT* pAppContext);
+
+#define PRINT_PERF_MEAS() ((CAtEmLogging*)pAppContext->LogParms.pLogContext)->PrintPerfMeas(pAppContext->dwInstanceId, 0, pEcLogContext)
 
 #endif /* INC_ECDEMOAPP_H */
 

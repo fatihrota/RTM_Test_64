@@ -32,6 +32,12 @@
 #define DEFAULT_PREFIX "ecsimulator"
 #endif
 #endif
+#elif (defined EC_MONITOR)
+#ifdef FILESYS_8_3
+#define DEFAULT_PREFIX "em"
+#else
+#define DEFAULT_PREFIX "ecmonitor"
+#endif
 #else
 #if (defined INCLUDE_ATEMRAS)
 #ifdef FILESYS_8_3
@@ -64,7 +70,7 @@ EC_T_BOOL CFrameLogMultiplexer::G_bAutoDispose = EC_FALSE;
 
 #if (defined INCLUDE_FILE_LOGGING)
 #if (defined EC_VERSION_FREERTOS) || (defined EC_VERSION_VXWORKS) || (defined EC_VERSION_TKERNEL)\
-    || (defined EC_VERSION_SYSBIOS) || (defined EC_VERSION_RIN32M3) || (defined EC_VERSION_XILINX_STANDALONE)\
+    || (defined EC_VERSION_SYSBIOS) || (defined EC_VERSION_RIN32) || (defined EC_VERSION_XILINX_STANDALONE)\
     || (defined EC_VERSION_ETKERNEL) || (defined EC_VERSION_RTXC) || (defined EC_VERSION_RZT1) || (defined EC_VERSION_RZGNOOS) || (defined EC_VERSION_ECOS)\
     || (defined EC_VERSION_JSLWARE) || (defined EC_VERSION_UC3) || (defined EC_VERSION_UCOS) || (defined EC_VERSION_XMC)
 EC_T_BOOL bLogFileEnb = EC_FALSE;
@@ -101,6 +107,13 @@ CAtEmLogging::CAtEmLogging(EC_T_VOID)
 #if (defined INCLUDE_FILE_LOGGING)
     m_pchLogDir[0] = '\0';
     m_pchLogDir[MAX_PATH_LEN - 1] = '\0';
+#endif
+
+#if (!defined EC_EAP)
+    m_dwPerfMeasNumOf = 0;
+    m_aPerfMeasVal = EC_NULL;
+    m_aPerfMeasInfo = EC_NULL;
+    OsMemset(m_aData, 0, sizeof(m_aData));
 #endif
 
     if (!s_bLogParmsArrayInitialized)
@@ -405,6 +418,13 @@ EC_T_VOID CAtEmLogging::DeinitLogging(EC_T_VOID)
     OsDeleteLock(m_poProcessMsgLock);
     SafeOsFree(m_pchTempbuffer);
     m_pchTempbuffer = EC_NULL;
+
+   /* delete performance measurement buffers */
+#if (!defined EC_EAP)
+    SafeOsFree(m_aPerfMeasVal);
+    SafeOsFree(m_aPerfMeasInfo);
+    m_dwPerfMeasNumOf = 0;
+#endif
 }
 
 /********************************************************************************/
@@ -642,8 +662,8 @@ CEcTimer oTimeout;
 */
 EC_T_DWORD CAtEmLogging::LogMsg(struct _EC_T_LOG_CONTEXT* pContext, EC_T_DWORD dwLogMsgSeverity, const EC_T_CHAR* szFormat, ...)
 {
-	EC_T_DWORD  dwRetVal = EC_E_ERROR;
-	EC_T_VALIST vaArgs;
+    EC_T_DWORD  dwRetVal = EC_E_ERROR;
+    EC_T_VALIST vaArgs;
 
     if (!s_bLogParmsArrayInitialized || (EC_NULL == pContext))
     {
@@ -838,14 +858,194 @@ EC_T_VOID CAtEmLogging::PrintMsg(LOG_MSG_DESC* pMsgDesc)
 
         /* print with timestamp */
         pMsgDesc->dwMsgBufferLen = pMsgDesc->dwMsgLen + LOG_MSG_OFFSET_AFTER_TIMESTAMP;
+    }
+
+#if (defined EC_LOGGING_MAX_LOG_LEVEL_CONSOLE) /* e.g. EC_LOG_LEVEL_INFO */
+    if (pMsgDesc->dwSeverity <= EC_LOGGING_MAX_LOG_LEVEL_CONSOLE)
+#endif
+    {
         PrintConsole(pMsgDesc->szMsgBuffer);
     }
-    else
+}
+
+#if (!defined EC_EAP)
+EC_T_VOID CAtEmLogging::PrintPerfMeasInternal(struct _EC_T_LOG_CONTEXT* pContext, EC_T_DWORD dwNumOf, EC_T_PERF_MEAS_VAL* aPerfMeasVal, EC_T_PERF_MEAS_INFO* aPerfMeasInfo)
+{
+    EC_T_DWORD dwPerfMeasIdx;
+    for (dwPerfMeasIdx = 0; dwPerfMeasIdx < dwNumOf; ++dwPerfMeasIdx)
     {
-        /* print without timestamp */
-        PrintConsole(pMsgDesc->szMsg);
+        EC_T_PERF_MEAS_VAL* pPerfMeasVal = &aPerfMeasVal[dwPerfMeasIdx];
+        EC_T_PERF_MEAS_INFO* pPerfMeasInfo = &aPerfMeasInfo[dwPerfMeasIdx];
+        EC_T_UINT64 qwFrequency = pPerfMeasInfo->qwFrequency / (10 * 1000) /* 1/10 usec */;
+        EC_T_UINT64 qwMin = pPerfMeasVal->qwMinTicks * 1000 / qwFrequency;
+        EC_T_UINT64 qwAvg = pPerfMeasVal->qwAvgTicks * 1000 / qwFrequency;
+        EC_T_UINT64 qwMax = pPerfMeasVal->qwMaxTicks * 1000 / qwFrequency;
+        if ((qwMax > 0) && !(pPerfMeasInfo->dwFlags & EC_T_PERF_MEAS_FLAG_DISTANCE))
+        {
+            LogMsg(pContext, EC_LOG_LEVEL_ANY, "PerfMsmt '%s' (min/avg/max) [usec]: %4d.%d/%4d.%d/%4d.%d\n",
+                pPerfMeasInfo->szName,
+                (EC_T_DWORD)qwMin / 10, (EC_T_DWORD)qwMin % 10,
+                (EC_T_DWORD)qwAvg / 10, (EC_T_DWORD)qwAvg % 10,
+                (EC_T_DWORD)qwMax / 10, (EC_T_DWORD)qwMax % 10);
+        }
     }
 }
+
+EC_T_DWORD CAtEmLogging::PrintPerfMeas(EC_T_DWORD dwPerfMeasInstanceId0, EC_T_DWORD dwPerfMeasInstanceId1, struct _EC_T_LOG_CONTEXT* pContext)
+{
+    EC_T_DWORD dwRes    = EC_E_ERROR;
+    EC_T_DWORD dwRetVal = EC_E_ERROR;
+
+    EC_UNREFPARM(dwPerfMeasInstanceId0);
+    EC_UNREFPARM(dwPerfMeasInstanceId1);
+
+    /* (re-)allocate memory if needed */
+#if (defined INCLUDE_EC_MASTER) || (defined INCLUDE_EC_MONITOR)
+    dwRes = emPerfMeasInternalGetNumOf(dwPerfMeasInstanceId0, &m_aData[0].dwInternalNumOf);
+    if (EC_E_NOERROR != dwRes)
+    {
+        dwRetVal = dwRes;
+        goto Exit;
+    }
+    dwRes = emPerfMeasAppGetNumOf(dwPerfMeasInstanceId0, EC_NULL, &m_aData[0].dwAppNumOf);
+    if (EC_E_NOERROR != dwRes)
+    {
+        dwRetVal = dwRes;
+        goto Exit;
+    }
+#endif /* INCLUDE_EC_MASTER || INCLUDE_EC_MONITOR */
+#if (defined INCLUDE_EC_SIMULATOR)
+    dwRes = esPerfMeasInternalGetNumOf(dwPerfMeasInstanceId1, &m_aData[1].dwInternalNumOf);
+    if (EC_E_NOERROR != dwRes)
+    {
+        dwRetVal = dwRes;
+        goto Exit;
+    }
+    dwRes = esPerfMeasAppGetNumOf(dwPerfMeasInstanceId1, EC_NULL, &m_aData[1].dwAppNumOf);
+    if (EC_E_NOERROR != dwRes)
+    {
+        dwRetVal = dwRes;
+        goto Exit;
+    }
+#endif /* INCLUDE_EC_SIMULATOR */
+    if ((m_aData[0].dwInternalNumOf > m_dwPerfMeasNumOf) || (m_aData[0].dwAppNumOf > m_dwPerfMeasNumOf)
+        || (m_aData[1].dwInternalNumOf > m_dwPerfMeasNumOf) || (m_aData[1].dwAppNumOf > m_dwPerfMeasNumOf))
+    {
+        SafeOsFree(m_aPerfMeasVal);
+        SafeOsFree(m_aPerfMeasInfo);
+        m_dwPerfMeasNumOf = 0;
+    }
+
+    if (0 == m_dwPerfMeasNumOf)
+    {
+        m_dwPerfMeasNumOf = EC_MAX(EC_MAX(EC_MAX(m_aData[0].dwInternalNumOf, m_aData[0].dwAppNumOf), m_aData[1].dwInternalNumOf), m_aData[1].dwAppNumOf);
+        if (m_dwPerfMeasNumOf > 0)
+        {
+            m_aPerfMeasVal = (EC_T_PERF_MEAS_VAL*)OsMalloc(m_dwPerfMeasNumOf * sizeof(EC_T_PERF_MEAS_VAL));
+            m_aPerfMeasInfo = (EC_T_PERF_MEAS_INFO*)OsMalloc(m_dwPerfMeasNumOf * sizeof(EC_T_PERF_MEAS_INFO));
+
+            if ((EC_NULL == m_aPerfMeasVal) || (EC_NULL == m_aPerfMeasInfo))
+            {
+                SafeOsFree(m_aPerfMeasVal);
+                SafeOsFree(m_aPerfMeasInfo);
+                m_dwPerfMeasNumOf = 0;
+
+                dwRetVal = EC_E_NOMEMORY;
+                goto Exit;
+            }
+        }
+    }
+
+    if ((m_aData[0].dwInternalNumOf > 0) || (m_aData[1].dwInternalNumOf > 0) || (m_aData[0].dwAppNumOf > 0) || (m_aData[1].dwAppNumOf > 0))
+    {
+        LogMsg(pContext, EC_LOG_LEVEL_ANY, "============================================================================\n");
+
+        /* print internal benchmarks */
+#if (defined INCLUDE_EC_MASTER) || (defined INCLUDE_EC_MONITOR)
+        if (m_aData[0].dwInternalNumOf > 0)
+        {
+            dwRes = emPerfMeasInternalGetRaw(dwPerfMeasInstanceId0, EC_PERF_MEAS_ALL, m_aPerfMeasVal, EC_NULL, m_aData[0].dwInternalNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            dwRes = emPerfMeasInternalGetInfo(dwPerfMeasInstanceId0, EC_PERF_MEAS_ALL, m_aPerfMeasInfo, m_aData[0].dwInternalNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            PrintPerfMeasInternal(pContext, m_aData[0].dwInternalNumOf, m_aPerfMeasVal, m_aPerfMeasInfo);
+        }
+#endif /* INCLUDE_EC_MASTER || INCLUDE_EC_MONITOR */
+
+#if (defined INCLUDE_EC_SIMULATOR)
+        if (m_aData[1].dwInternalNumOf > 0)
+        {
+            dwRes = esPerfMeasInternalGetRaw(dwPerfMeasInstanceId1, EC_PERF_MEAS_ALL, m_aPerfMeasVal, EC_NULL, m_aData[1].dwInternalNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            dwRes = esPerfMeasInternalGetInfo(dwPerfMeasInstanceId1, EC_PERF_MEAS_ALL, m_aPerfMeasInfo, m_aData[1].dwInternalNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            PrintPerfMeasInternal(pContext, m_aData[1].dwInternalNumOf, m_aPerfMeasVal, m_aPerfMeasInfo);
+        }
+#endif /* INCLUDE_EC_SIMULATOR */
+
+    /* print Application benchmarks */
+#if (defined INCLUDE_EC_MASTER) || (defined INCLUDE_EC_MONITOR)
+        if (m_aData[0].dwAppNumOf > 0)
+        {
+            dwRes = emPerfMeasAppGetRaw(dwPerfMeasInstanceId0, EC_NULL, EC_PERF_MEAS_ALL, m_aPerfMeasVal, EC_NULL, m_aData[0].dwAppNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            dwRes = emPerfMeasAppGetInfo(dwPerfMeasInstanceId0, EC_NULL, EC_PERF_MEAS_ALL, m_aPerfMeasInfo, m_aData[0].dwAppNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            PrintPerfMeasInternal(pContext, m_aData[0].dwAppNumOf, m_aPerfMeasVal, m_aPerfMeasInfo);
+        }
+#endif /* INCLUDE_EC_MASTER || INCLUDE_EC_MONITOR */
+
+#if (defined INCLUDE_EC_SIMULATOR)
+        if (m_aData[1].dwAppNumOf > 0)
+        {
+            dwRes = esPerfMeasAppGetRaw(dwPerfMeasInstanceId1, EC_NULL, EC_PERF_MEAS_ALL, m_aPerfMeasVal, EC_NULL, m_aData[1].dwAppNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            dwRes = esPerfMeasAppGetInfo(dwPerfMeasInstanceId1, EC_NULL, EC_PERF_MEAS_ALL, m_aPerfMeasInfo, m_aData[1].dwAppNumOf);
+            if (EC_E_NOERROR != dwRes)
+            {
+                dwRetVal = dwRes;
+                goto Exit;
+            }
+            PrintPerfMeasInternal(pContext, m_aData[1].dwAppNumOf, m_aPerfMeasVal, m_aPerfMeasInfo);
+        }
+#endif /* INCLUDE_EC_SIMULATOR */
+
+        LogMsg(pContext, EC_LOG_LEVEL_ANY, "\n");
+    }
+
+    dwRetVal = EC_E_NOERROR;
+Exit:
+    return dwRetVal;
+}
+#endif /* !EC_EAP */
 
 /********************************************************************************/
 /** \brief Process all messages of a message buffer
@@ -1284,6 +1484,15 @@ EC_T_DWORD CFrameLogMultiplexer::DeleteInstances(EC_T_VOID)
     return EC_E_NOERROR;
 }
 
+CFrameLogMultiplexer* CFrameLogMultiplexer::GetInstance(EC_T_DWORD dwInstanceId)
+{
+    if (EC_NULL == G_aLogMultiplexer)
+    {
+        return EC_NULL;
+    }
+    return &G_aLogMultiplexer[dwInstanceId];
+}
+
 CFrameSpy::~CFrameSpy()
 {
     Uninstall();
@@ -1345,11 +1554,14 @@ void CFrameSpy::FrameHandler(EC_T_DWORD dwLogFrameFlags, EC_T_DWORD dwFrameSize,
 
 /*-CLASS FUNCTIONS-----------------------------------------------------------*/
 CPcapRecorder::CPcapRecorder(EC_T_DWORD dwBufCnt, EC_T_DWORD dwPrio /* LOG_THREAD_PRIO */, EC_T_DWORD dwInstanceId, const EC_T_CHAR* szFileName)
-: CPcapFileBufferedWriter(dwBufCnt, dwPrio), m_dwInstanceId(0xffff)
+: CPcapFileBufferedWriter(dwBufCnt, 0 /* EC_CPUSET_ZERO */, dwPrio, DEFAULT_LOG_STACK_SIZE), m_dwInstanceId(0xffff)
 {
     m_nLoggedFrameCount = 0;
     OsDbgAssert(ETHERNET_MAX_FRAME_LEN < ETHERNET_MAX_FRAMEBUF_LEN - sizeof(EC_T_LINK_FRAME_BUF_ENTRY_FRAME_DESC));
-    InitInstance(dwBufCnt);
+    if (EC_E_NOERROR != InitInstance(dwBufCnt))
+    {
+        return;
+    }
     if (EC_NULL != szFileName)
     {
         Open(szFileName);
@@ -1432,16 +1644,49 @@ EC_T_VOID CPcapFileBufferedWriter::AddFrame(EC_T_DWORD dwFrameSize, EC_T_BYTE* p
     }
     OsMemcpy(Entry.abyData, pbyFrame, dwFrameSize);
 
-#if (defined EC_VERSION_WINDOWS)
-    Entry.Desc.qwTimestamp = OsQueryMsecCount();
-    Entry.Desc.qwTimestamp = Entry.Desc.qwTimestamp * 1000000;
-#else
-    OsSystemTimeGet(&Entry.Desc.qwTimestamp);
-#endif
+    SetFrameTimestamp(&Entry.Desc.qwTimestamp);
+
     /* CRC should be already stripped off */
     Entry.Desc.dwSize = dwFrameSize;
     OsDbgAssert(0 != dwFrameSize);
     m_FrameBuffer.Add(Entry);
+}
+
+EC_T_VOID CPcapFileBufferedWriter::SetFrameTimestamp(EC_T_UINT64* pqwTimestamp)
+{
+#if (defined INCLUDE_PCAP_RECORDER_OS_PERF_MEAS)
+    if (0 == m_qwStartTimeCounterTicks)
+    {
+        m_qwStartTimeCounterTicks = OsMeasGetCounterTicks();
+        *pqwTimestamp = 0;
+    }
+    else
+    {
+        EC_T_DWORD dw100kHzFrequency = OsMeasGet100kHzFrequency();
+        EC_T_UINT64 qwDiff = OsMeasGetCounterTicks() - m_qwStartTimeCounterTicks;
+        if (0 == dw100kHzFrequency)
+        {
+            *pqwTimestamp = 0;
+        }
+        else
+        {
+            /* convert to nsec */
+            if (0 != (EC_HIDWORD(qwDiff) & 0xFFF00000))  /* for big values don't multiply to prevent from overrun */
+            {
+                *pqwTimestamp = (qwDiff / dw100kHzFrequency) * 10000;
+            }
+            else
+            {
+                *pqwTimestamp = (qwDiff * 10000) / dw100kHzFrequency;
+            }
+        }
+    }
+#elif (defined EC_VERSION_WINDOWS)
+    *pqwTimestamp = OsQueryMsecCount();
+    *pqwTimestamp = *pqwTimestamp * 1000000;
+#else
+    OsSystemTimeGet(pqwTimestamp);
+#endif
 }
 
 EC_T_VOID CPcapRecorder::LogFrame(EC_T_DWORD dwLogFrameFlags, EC_T_DWORD dwFrameSize, EC_T_BYTE* pbyFrame)
@@ -1462,20 +1707,16 @@ EC_T_VOID CPcapRecorder::LogFrame(EC_T_DWORD dwLogFrameFlags, EC_T_DWORD dwFrame
     m_nLoggedFrameCount++;
     OsMemcpy(Entry.abyData, pbyFrame, dwFrameSize);
 
-#if (defined EC_VERSION_WINDOWS)
-    Entry.Desc.qwTimestamp = OsQueryMsecCount();
-    Entry.Desc.qwTimestamp = Entry.Desc.qwTimestamp * 1000000;
-#else
-    OsSystemTimeGet(&Entry.Desc.qwTimestamp);
-#endif
+    SetFrameTimestamp(&Entry.Desc.qwTimestamp);
 
     /* CRC should be already stripped off */
     Entry.Desc.dwSize = dwFrameSize;
     OsDbgAssert(0 != dwFrameSize);
     m_FrameBuffer.Add(Entry);
 
-    EcLogMsg(EC_LOG_LEVEL_VERBOSE_CYC, (pEcLogContext, EC_LOG_LEVEL_VERBOSE_CYC, "%d: CPcapRecorder::LogFrame(%s %s): frame %d, %d bytes\n",
-        m_dwInstanceId, ((0 != (dwLogFrameFlags & EC_LOG_FRAME_FLAG_RED_FRAME)) ? "RED" : "MAIN"),
+    EcLogMsg(EC_LOG_LEVEL_VERBOSE_CYC, (pEcLogContext, EC_LOG_LEVEL_VERBOSE_CYC, "%d: CPcapRecorder::LogFrame(%s%s%s %s): frame %d, %d bytes\n",
+        m_dwInstanceId, (m_szFileName ? m_szFileName : ""), (m_szFileName ? " " : ""),
+        ((0 != (dwLogFrameFlags & EC_LOG_FRAME_FLAG_RED_FRAME)) ? "RED" : "MAIN"),
                       ((0 != (dwLogFrameFlags & EC_LOG_FRAME_FLAG_RX_FRAME)) ? "RX" : "TX"),
         m_nLoggedFrameCount, dwFrameSize));
 }
@@ -1510,7 +1751,7 @@ EC_T_DWORD CPcapFileReader::Open(const EC_T_CHAR * szFilename, int nSkipFrames)
     return EC_E_NOERROR;
 }
 
-EC_T_UINT64 CPcapFileReader::GetNextFrame(EC_T_LINK_FRAMEDESC * pFrame)
+EC_T_UINT64 CPcapFileReader::GetNextFrame(EC_T_LINK_FRAMEDESC* pFrame)
 {
     if (m_bLimitedFrameCnt && (0 == m_nMaxFrames))
         return EC_FALSE;

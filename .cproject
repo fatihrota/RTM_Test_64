@@ -17,32 +17,27 @@
 				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.debug.1487704002" name="Debug" parent="cdt.managedbuild.config.gnu.cross.exe.debug">
 					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1487704002." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.debug.813001198" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.debug">
-							<option id="cdt.managedbuild.option.gnu.cross.prefix.1124627066" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix" value="i686-pc-linux-gnu-" valueType="string"/>
-							<option id="cdt.managedbuild.option.gnu.cross.path.328322907" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path" value="C:\MinGW\bin" valueType="string"/>
+							<option id="cdt.managedbuild.option.gnu.cross.prefix.1124627066" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix" value="x86_64-pc-linux-gnu-" valueType="string"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.328322907" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path" value="C:\MinGw64\bin" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.458335866" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
 							<builder buildPath="${workspace_loc:/AcontisEclipseTest}/Debug" id="cdt.managedbuild.builder.gnu.cross.2136844267" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1178660026" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.option.optimization.level.214902419" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.debugging.level.1113289221" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.dialect.std.590688710" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.include.paths.1953370049" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Examples\Inc\Linux&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC\Linux&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\Sources\Common&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Inc&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Inc\Linux&quot;"/>
-								</option>
+								<option id="gnu.c.compiler.option.include.paths.1953370049" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option id="gnu.c.compiler.option.preprocessor.undef.symbol.554069369" name="Undefined symbols (-U)" superClass="gnu.c.compiler.option.preprocessor.undef.symbol" useByScannerDiscovery="false"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.829302109" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool command="i686-pc-linux-gnu-g++" id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1575470166" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
+							<tool command="x86_64-pc-linux-gnu-g++" id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1575470166" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
 								<option id="gnu.cpp.compiler.option.optimization.level.1250221237" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.debugging.level.1460041643" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.309762348" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC\Linux&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\Examples\Linux\EcMasterDemo&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC\Linux&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Examples\Inc\Linux&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC\Linux&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\Sources\Common&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Inc\Linux&quot;"/>
 								</option>
@@ -60,8 +55,8 @@
 									<listOptionValue builtIn="false" value="rt"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.2131944978" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\LIB\Linux\x86&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Lib\Linux\x86&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\LIB\Linux\x64&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Program Files\acontis_technologies\LxWin\SDK\Lib\Linux\x64&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.684074224" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -171,20 +166,20 @@
 			<resource resourceType="PROJECT" workspacePath="/AcontisEclipseTest"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.release.972172944;cdt.managedbuild.config.gnu.cross.exe.release.972172944.;cdt.managedbuild.tool.gnu.cross.c.compiler.1775529975;cdt.managedbuild.tool.gnu.c.compiler.input.997352179">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.release.972172944;cdt.managedbuild.config.gnu.cross.exe.release.972172944.;cdt.managedbuild.tool.gnu.cross.cpp.compiler.880363850;cdt.managedbuild.tool.gnu.cpp.compiler.input.1691180627">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.debug.1487704002;cdt.managedbuild.config.gnu.cross.exe.debug.1487704002.;cdt.managedbuild.tool.gnu.cross.cpp.compiler.1575470166;cdt.managedbuild.tool.gnu.cpp.compiler.input.1497376126">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.release.972172944;cdt.managedbuild.config.gnu.cross.exe.release.972172944.;cdt.managedbuild.tool.gnu.cross.c.compiler.1775529975;cdt.managedbuild.tool.gnu.c.compiler.input.997352179">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.debug.1487704002;cdt.managedbuild.config.gnu.cross.exe.debug.1487704002.;cdt.managedbuild.tool.gnu.cross.c.compiler.1178660026;cdt.managedbuild.tool.gnu.c.compiler.input.829302109">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

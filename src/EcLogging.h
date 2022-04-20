@@ -19,20 +19,18 @@ extern struct _EC_T_LOG_PARMS G_aLogParms[];
 #include "EcOs.h"
 #endif
 
-#if (defined __MET__)
-#include "fio.h"
-#else
 #include "stdio.h"
-#endif
 
-#ifndef EXCLUDE_ECM_RUNTIME_LINKAGE
-#ifndef ECM_RUNTIME_LINKAGE
+#if (!defined ECM_RUNTIME_LINKAGE) && (!defined EXCLUDE_ECM_RUNTIME_LINKAGE)
 #define ECM_RUNTIME_LINKAGE
 #endif
+
+#if (!defined INCLUDE_PCAP_RECORDER_OS_PERF_MEAS) && (!defined EXCLUDE_PCAP_RECORDER_OS_PERF_MEAS)
+#define INCLUDE_PCAP_RECORDER_OS_PERF_MEAS
 #endif
 
 /* include Frame Spy for EC-Master and EC-Simulator */
-#if ((defined ECM_RUNTIME_LINKAGE) || (defined EC_SIMULATOR)) && (!defined INCLUDE_FRAME_SPY) && (!defined EXCLUDE_FRAME_SPY)
+#if (!defined INCLUDE_FRAME_SPY) && (!defined EXCLUDE_FRAME_SPY)
 #define INCLUDE_FRAME_SPY
 #endif
 
@@ -49,6 +47,10 @@ extern struct _EC_T_LOG_PARMS G_aLogParms[];
 #if (defined EC_SIMULATOR)
 #if (!defined INC_ECSIMULATOR)
 #include "EcSimulator.h"
+#endif
+#elif (defined EC_MONITOR)
+#if (!defined INC_ECMONITOR)
+#include "EcMonitor.h"
 #endif
 #elif (defined ECM_RUNTIME_LINKAGE)
 #if (!defined INC_ATETHERCAT)
@@ -290,11 +292,17 @@ public:
     EC_T_DWORD  SetLogDir(                      EC_T_CHAR*              szLogDir                    );
 #endif
 
+#if (!defined EC_EAP)
+    EC_T_DWORD  PrintPerfMeas(                  EC_T_DWORD                dwPerfMeasInstanceId0,
+                                                EC_T_DWORD                dwPerfMeasInstanceId1,
+                                                struct _EC_T_LOG_CONTEXT* pContext                  );
+#endif
+
     /* legacy */
     virtual
     EC_T_VOID   PrintConsole(                   EC_T_CHAR*              szMsg                       );
 
-    virtual     
+    virtual
     EC_T_VOID   PrintMsg(                       LOG_MSG_DESC*           pMsgDesc                    );
 
 private:
@@ -322,6 +330,14 @@ private:
     static
     EC_T_VOID   tAtEmLogWrapper(                EC_T_VOID*              pvParms                     );
 
+#if (!defined EC_EAP)
+    static
+    EC_T_VOID   PrintPerfMeasInternal(          struct _EC_T_LOG_CONTEXT* pContext,
+                                                EC_T_DWORD                dwNumOf,
+                                                EC_T_PERF_MEAS_VAL*       aPerfMeasVal,
+                                                EC_T_PERF_MEAS_INFO*      aPerfMeasInfo               );
+#endif
+
     EC_T_PVOID              m_pvLogThreadObj;
     EC_T_BOOL               m_bLogTaskRunning;
     EC_T_BOOL               m_bShutdownLogTask;
@@ -345,6 +361,17 @@ private:
     EC_T_CHAR               m_pchLogDir[MAX_PATH_LEN];      /* directory for all EtherCAT logging files */
 #endif
 
+#if (!defined EC_EAP)
+    EC_T_DWORD              m_dwPerfMeasNumOf;              /* number of performance measurements */
+    EC_T_PERF_MEAS_VAL*     m_aPerfMeasVal;                 /* performance measurement result buffer */
+    EC_T_PERF_MEAS_INFO*    m_aPerfMeasInfo;                /* performance measurement info buffer */
+    struct
+    {
+        EC_T_DWORD          dwInternalNumOf;
+        EC_T_DWORD          dwAppNumOf;
+    } m_aData[2]; /* 0: EC-Master / EC-Monitor, 1: EC-Simulator*/
+#endif
+
     static EC_T_BOOL        s_bLogParmsArrayInitialized;
 };
 
@@ -357,6 +384,7 @@ public:
 
     static EC_T_DWORD CreateInstances(EC_T_VOID);
     static EC_T_DWORD DeleteInstances(EC_T_VOID);
+    static CFrameLogMultiplexer* GetInstance(EC_T_DWORD dwInstanceId);
 
     /** \brief add logger to list */
     static EC_T_VOID AddFrameLogger(EC_T_DWORD dwInstanceId, EC_T_VOID* pvContext, EC_T_PFLOGFRAME_CB pvLogFrameCallBack);
@@ -473,7 +501,7 @@ protected:
 };
 #endif
 
-#if (defined INCLUDE_PCAP_RECORDER) || (defined INCLUDE_PCAP_READER) 
+#if (defined INCLUDE_PCAP_RECORDER) || (defined INCLUDE_PCAP_READER)
 #include EC_PACKED_INCLUDESTART(1)
 struct pcap_file_header {
     EC_T_DWORD magic;
@@ -547,10 +575,20 @@ private:
 class CPcapFileWriter : public CPcapFileProcessor
 {
 public:
-    CPcapFileWriter() { m_szFileName = EC_NULL; }
+    CPcapFileWriter()
+    {
+        m_RotationDesc.dwFileCnt = 0;
+        m_RotationDesc.dwMaxFileCnt = 0;
+        m_RotationDesc.dwFrameCnt = 0;
+        m_RotationDesc.dwMaxFrameCnt = 0;
+        m_RotationDesc.qwFileSize = 0;
+        m_RotationDesc.qwMaxFileSize = 0;
+        m_szFileName = EC_NULL;
+    }
     virtual ~CPcapFileWriter() { SafeOsFree(m_szFileName); }
 
-    EC_T_VOID Open(const EC_T_CHAR* szFilename)
+private:
+    EC_T_VOID OpenPrivate(const EC_T_CHAR* szFilename)
     {
         if ((EC_NULL != m_pfHandle) || (EC_NULL == szFilename) || (OsStrlen(szFilename) == 0))
             return;
@@ -565,26 +603,93 @@ public:
         m_pfHandle = OsFopen(szFilename, "wb+");
 
         OsFwrite(&m_FileHeader, sizeof(struct pcap_file_header), 1, m_pfHandle);
-
-        m_szFileName = (EC_T_CHAR*)OsMalloc(OsStrlen(szFilename) + 1);
-        if (EC_NULL != m_szFileName) OsStrcpy(m_szFileName, szFilename);
     }
+
+public:
+    EC_T_VOID Open(const EC_T_CHAR* szFilename)
+    {
+        m_szFileName = (EC_T_CHAR*)OsMalloc(OsStrlen(szFilename) + 1 + OsStrlen(".00000.pcap"));
+        if (EC_NULL == m_szFileName) return;
+
+        OsStrcpy(m_szFileName, szFilename);
+        OpenPrivate(m_szFileName);
+    }
+
+    EC_INLINESTART EC_T_BOOL IsRotationNeeded(struct pcap_pkthdr* pFrameHeader)
+    {
+        return m_RotationDesc.oTimer.IsElapsed()
+            || ((m_RotationDesc.dwMaxFrameCnt > 0) && (m_RotationDesc.dwFrameCnt >= m_RotationDesc.dwMaxFrameCnt))
+            || ((m_RotationDesc.qwMaxFileSize > 0) && (m_RotationDesc.qwFileSize + sizeof(struct pcap_pkthdr) + pFrameHeader->len > m_RotationDesc.qwMaxFileSize));
+    } EC_INLINESTOP
+
+    EC_T_VOID Rotate()
+    {
+        EC_T_DWORD dwFileNameLen = (EC_T_DWORD)OsStrlen(m_szFileName);
+        if (m_RotationDesc.dwFileCnt > m_RotationDesc.dwMaxFileCnt)
+        {
+            m_RotationDesc.dwFileCnt = 0;
+        }
+        OsSnprintf(&m_szFileName[dwFileNameLen], (EC_T_DWORD)OsStrlen(".00000.pcap") + 1, ".%05d.pcap", m_RotationDesc.dwFileCnt);
+        CPcapFileProcessor::Close();
+        OpenPrivate(m_szFileName);
+        m_szFileName[dwFileNameLen] = '\0';
+
+        m_RotationDesc.dwFileCnt++;
+        m_RotationDesc.dwFrameCnt = 0;
+        m_RotationDesc.qwFileSize = sizeof(struct pcap_file_header);
+        if (m_RotationDesc.oTimer.IsStarted()) m_RotationDesc.oTimer.Restart();
+    }
+
     EC_T_BOOL WriteFrame(struct pcap_pkthdr* pFrameHeader, EC_T_BYTE* pbyFrame)
     {
         if (EC_NULL == m_pfHandle)
             return EC_FALSE;
 
+        if (IsRotationNeeded(pFrameHeader))
+            Rotate();
+
         if (1 != OsFwrite(pFrameHeader, sizeof(struct pcap_pkthdr), 1, m_pfHandle))
+        {
             return EC_FALSE;
+        }
+        m_RotationDesc.qwFileSize = m_RotationDesc.qwFileSize + sizeof(struct pcap_pkthdr);
 
         if (pFrameHeader->len != OsFwrite(pbyFrame, 1, pFrameHeader->len, m_pfHandle))
+        {
             return EC_FALSE;
+        }
+        m_RotationDesc.qwFileSize = m_RotationDesc.qwFileSize + pFrameHeader->len;
 
+        m_RotationDesc.dwFrameCnt++;
         return EC_TRUE;
     }
 
+    EC_T_VOID SetLogRotation(EC_T_DWORD dwMaxFileCnt,
+        EC_T_DWORD dwMaxFrameCnt, EC_T_UINT64 qwMaxFileSize, EC_T_DWORD dwInterval)
+    {
+        m_RotationDesc.dwMaxFileCnt = dwMaxFileCnt;
+        m_RotationDesc.dwMaxFrameCnt = dwMaxFrameCnt;
+        m_RotationDesc.qwMaxFileSize = qwMaxFileSize;
+        if (dwInterval > 0)
+        {
+            m_RotationDesc.oTimer.Start(dwInterval);
+        }
+        Rotate();
+    }
+
 protected:
-    EC_T_CHAR* m_szFileName;
+    struct
+    {
+        EC_T_DWORD   dwFileCnt;
+        EC_T_DWORD   dwMaxFileCnt;
+        EC_T_DWORD   dwFrameCnt;
+        EC_T_DWORD   dwMaxFrameCnt;
+        EC_T_UINT64  qwFileSize;
+        EC_T_UINT64  qwMaxFileSize;
+        CEcTimer     oTimer;
+    } m_RotationDesc;
+
+    EC_T_CHAR*       m_szFileName;
 };
 
 typedef struct
@@ -601,23 +706,32 @@ typedef struct
 class CPcapFileBufferedWriter : public CPcapFileWriter, public CEcThread
 {
 public:
-    CPcapFileBufferedWriter(EC_T_DWORD dwBufCnt, EC_T_DWORD dwPrio)
-        : m_FrameBuffer(dwBufCnt, EC_NULL, (EC_T_CHAR*)"CPcapFileBufferedWriter"), m_dwPrio(dwPrio)
+    CPcapFileBufferedWriter(EC_T_DWORD dwBufCnt, EC_T_CPUSET cpuAffinity /* EC_CPUSET_ZERO */, EC_T_DWORD dwPrio /* LOG_THREAD_PRIO */, EC_T_DWORD dwStackSize /* DEFAULT_LOG_STACK_SIZE */)
+        : m_FrameBuffer(dwBufCnt, EC_NULL, (EC_T_CHAR*)"CPcapFileBufferedWriter"), m_cpuAffinity(cpuAffinity), m_dwPrio(dwPrio), m_dwStackSize(dwStackSize)
     {
+#if (defined INCLUDE_PCAP_RECORDER_OS_PERF_MEAS)
+        m_qwStartTimeCounterTicks = 0;
+
+        if (0 == OsMeasGet100kHzFrequency())
+        {
+            OsMeasCalibrate(0);
+        }
+#endif
     }
     virtual EC_T_DWORD InitInstance(EC_T_DWORD dwBufCnt)
     {
-        m_FrameBuffer.InitInstance(dwBufCnt);
-        return EC_E_NOERROR;
+        return m_FrameBuffer.InitInstance(dwBufCnt);
     }
     EC_T_VOID StartThread()
     {
-        Start(GetLogParms(), ThreadStep, (void*)this, "CLogThread", m_dwPrio, DEFAULT_LOG_STACK_SIZE, 15000);
+        Start(GetLogParms(), ThreadStep, (void*)this, "CLogThread", m_cpuAffinity, m_dwPrio, m_dwStackSize, 15000);
     }
     virtual ~CPcapFileBufferedWriter()
     {
         Close();
     }
+    EC_T_VOID SetFrameTimestamp(EC_T_UINT64* pqwTimestamp);
+
     EC_T_VOID AddFrame(EC_T_DWORD dwFrameSize, EC_T_BYTE* pbyFrame);
 
     virtual EC_T_VOID Close(EC_T_VOID)
@@ -636,7 +750,13 @@ public:
 
 protected:
     CFiFoListDyn<EC_T_LINK_FRAME_BUF_ENTRY> m_FrameBuffer;
-    EC_T_DWORD m_dwPrio;
+    EC_T_CPUSET m_cpuAffinity;
+    EC_T_DWORD  m_dwPrio;
+    EC_T_DWORD  m_dwStackSize;
+
+#if (defined INCLUDE_PCAP_RECORDER_OS_PERF_MEAS)
+    EC_T_UINT64 m_qwStartTimeCounterTicks;
+#endif
 };
 
 /** \brief writes frames to .pcap files */

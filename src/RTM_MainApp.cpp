@@ -28,6 +28,7 @@
 #include "RTM_MainApp.h"
 #include "json.hpp"
 #include "RtosComm.h"
+#include "EcSlaveInfo.h"
 
 /*============================================================================*/
 /* Forward declarations                                                       */
@@ -175,22 +176,23 @@ EC_T_VOID mainRun(EC_T_VOID* pvAppContext)
 	RtosComm *rtmComm = RtosComm::getInstance();
 
 	rtmComm->libInit();
-	rtmComm->create_Data_ReceiveMessageQueue();
-	rtmComm->create_Data_SendMessageQueue();
-	rtmComm->createSocket();
+	RtosTimeSyncStart();
+	//rtmComm->create_Data_ReceiveMessageQueue();
+	//rtmComm->create_Data_SendMessageQueue();
+	/*rtmComm->createSocket();
 	rtmComm->bindSocket();
-	rtmComm->listenSocket();
+	rtmComm->listenSocket();*/
 
 	while(1)
 	{
-		if (!rtmComm->connectedRTOS)
+		/*if (!rtmComm->connectedRTOS)
 		{
 			rtmComm->acceptClient();
 		}
 		else
 		{
 			rtmComm->receiveMessage();
-		}
+		}*/
 		OsSleep(1000);
 	}
 }
@@ -201,21 +203,24 @@ uint8_t tmpRcvd = 0;
 int counterX = 0;
 EC_T_VOID RTM_MainApp::copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg)
 {
-	memcpy(&receivedEtherCatArray[0], (UINT8*)&ecatMsg[0], MAX_ETHERCAT_MSG_SIZE);
+	RtosComm *rtmComm = RtosComm::getInstance();
+	//memcpy(&receivedEtherCatArray[0], (UINT8*)&ecatMsg[0], rtmComm->dwTotalPdSizeIn);
 	//printf("[0] : %d\n", receivedEtherCatArray[0]);
+	int val = (int)(*(int *)ecatMsg);
+
 
 	if(tmpRcvd == 255)
 	{
-		if (receivedEtherCatArray[0] != 0)
+		if (val != 0)
 		{
-			printf("X : %d - %d\n", tmpRcvd,receivedEtherCatArray[0] );
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "X : %d - %d - %d\n", tmpRcvd,receivedEtherCatArray[0],ecatMsg));
 		}
 	}
-	else if(tmpRcvd != (receivedEtherCatArray[0]-1))
+	else if(tmpRcvd != (val-1))
 	{
-		printf("E : %d - %d\n",tmpRcvd,receivedEtherCatArray[0]);
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "E : %d - %d - %d\n",tmpRcvd,receivedEtherCatArray[0],(int)(*(int *)ecatMsg)));
 	}
-	tmpRcvd = receivedEtherCatArray[0];
+	tmpRcvd = val;
 
 	/*if (counterX % 64 == 0)
 	{
@@ -228,26 +233,52 @@ EC_T_VOID RTM_MainApp::copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg)
 }
 
 /******************************************************************************/
+uint8_t started  = 0;
 EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 {
+	RtosComm *rtmComm = RtosComm::getInstance();
 	UINT32                  dwNumData;
-	memset((UINT8*)&rcvSignalFromNRTM[0], 0, MAX_ETHERCAT_MSG_SIZE);
+	UINT32 dwRetVal = RTE_SUCCESS;
+	//memset((UINT8*)&rcvSignalFromNRTM[0], 0, rtmComm->dwTotalPdSizeOut);
 
-	Info_Data_fromNRTM.dwSize = sizeof(Info_Data_fromNRTM);
-	RtosMsgQueueInfoGet(hQueue_Data_fromNRTM, &Info_Data_fromNRTM);
+	struct timespec t;
+	OsMemset(&t, 0, sizeof(struct timespec));
+	/* get current time */
+	clock_gettime(CLOCK_MONOTONIC, &t);
+
+	RtosMsgQueueInfoGet(rtmComm->hQueue_data_rcv, &rtmComm->InfoMsq_data_rcv);
 
 	//printf("Pending : %d\n", Info_fromNRTM.dwNumPending);
-	if (Info_Data_fromNRTM.dwNumPending > 0)
+	if (rtmComm->InfoMsq_data_rcv.dwNumPending > 0)
 	{
-		UINT32 dwRetVal = RtosMsgQueueRead(hQueue_Data_fromNRTM, (UINT8*)&rcvSignalFromNRTM[0], MAX_ETHERCAT_MSG_SIZE, &dwNumData, 1);
+		dwRetVal = RtosMsgQueueRead(rtmComm->hQueue_data_rcv, (UINT8*)&rcvSignalFromNRTM[0], MAX_ETHERCAT_MSG_SIZE, &dwNumData, 0);
 		if (dwRetVal != RTE_SUCCESS)
 		{
 			printf("RQ : %d\n", dwRetVal);
 
 		}
-
+		started = 1;
 		//printf("Take Data From Msq Queue : %d - %d - %d \n", rcvSignalFromNRTM[0], rcvSignalFromNRTM[1], rcvSignalFromNRTM[2]);
 	}
+	else
+	{
+		if (started)
+		{
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "E\n"));
+			started = 0;
+		}
+	}
+
+	struct timespec t2;
+	OsMemset(&t2, 0, sizeof(struct timespec));
+	/* get current time */
+	clock_gettime(CLOCK_MONOTONIC, &t2);
+
+	long entryNsec = ((t2.tv_sec-t.tv_sec) * 1000000000) + (t2.tv_nsec-t.tv_nsec);
+
+	if (entryNsec > 100000)
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Q: %ld\n", entryNsec));
+
 }
 
 /******************************************************************************/
@@ -275,15 +306,17 @@ EC_T_VOID RTM_MainApp::triggerTests(EC_T_VOID)
 	/* get current time */
 	clock_gettime(CLOCK_MONOTONIC, &t2);
 
-	if ((t2.tv_sec-t.tv_sec) > 0 || (t2.tv_nsec-t.tv_nsec) > 100000)
-		printf("%ld\n", (t2.tv_nsec-t.tv_nsec));
+	long entryNsec = ((t2.tv_sec-t.tv_sec) * 1000000000) + (t2.tv_nsec-t.tv_nsec);
+	if (entryNsec > 100000)
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "T: %ld\n", entryNsec));
 
 }
 
 /******************************************************************************/
 EC_T_VOID RTM_MainApp::copySendBufferToEthercat(EC_T_BYTE* ecatMsg)
 {
-	memcpy((UINT8*)&ecatMsg[0], &sendEtherCatArray[0], MAX_ETHERCAT_MSG_SIZE);
+	RtosComm *rtmComm = RtosComm::getInstance();
+	memcpy((UINT8*)&ecatMsg[0], &sendEtherCatArray[0], rtmComm->dwTotalPdSizeOut);
 }
 
 /******************************************************************************/

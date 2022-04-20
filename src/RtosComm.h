@@ -22,6 +22,7 @@
 #include <RtosLib.h>
 #include <stdint.h>
 #include "EcDemoApp.h"
+
 /*============================================================================*/
 /* Forward declarations                                                       */
 /*============================================================================*/
@@ -34,17 +35,17 @@
 #define TEXT( A )               A
 #endif
 
-#define MSGQUEUE_DATA_NAME_SEND			TEXT("MsgQueue_Data_FromRTMtoNRTM")
-#define MSGQUEUE_DATA_NAME_RCV			TEXT("MsgQueue_Data_FromNRTMtoRTM")
+#define MSGQUEUE_DATA_NAME_SEND			TEXT("MsgQueueFromRTMtoNRTM")
+#define MSGQUEUE_DATA_NAME_RCV			TEXT("MsgQueueFromNRTMtoRTM")
 
-#define DATA_SEND_MSQ_SIZE			10
-#define DATA_RCV_MSQ_SIZE			8000
+#define DATA_SEND_MSQ_SIZE			250
+#define DATA_RCV_MSQ_SIZE			250
 
 #define SERVER_OSID                 0 /* OS 0 = Rtos */
 #define SERVER_PORT                 7
-#define RTOS_MSG_SIZE				8000
+#define RTOS_MSG_SIZE				8
 
-#define MAX_ETHERCAT_MSG_SIZE			200
+#define MAX_ETHERCAT_MSG_SIZE 10000
 
 /*============================================================================*/
 /* Type definitions                                                           */
@@ -103,6 +104,9 @@ public:
 
 	UINT8 rtosSendArray[RTOS_MSG_SIZE];
 	UINT8 rtosRcvArray[RTOS_MSG_SIZE];
+
+	EC_T_INT dwTotalPdSizeIn = 0;
+	EC_T_INT dwTotalPdSizeOut = 0;
 
 	RTOSLIB_HANDLE          hQueue_data_snd = NULL;	/* RTOS Message Queue handler for outgoing messages */
 	RTOSLIB_HANDLE          hQueue_data_rcv = NULL; /* RTOS Message Queue handler for incoming messages */

@@ -17,11 +17,11 @@ typedef enum _T_eEtherCAT_Vendor
 {
     ecvendor_etg                                = 0x00000001,
     ecvendor_beckhoff                           = 0x00000002,
-    ecvendor_scuola_superiore_s_anna            = 0x00000003, 
+	ecvendor_scuola_superiore_s_anna            = 0x00000003,
     ecvendor_ixxat                              = 0x00000004,
     ecvendor_vector_informatik                  = 0x00000005,
     ecvendor_knestel                            = 0x00000006,
-	ecvendor_janz_tec                           = 0x00000007, 
+	ecvendor_janz_tec                           = 0x00000007,
 	ecvendor_a_and_c_shenyang_university        = 0x00000009,
     ecvendor_cmz_sistemi                        = 0x0000000a,
 	ecvendor_jsl								= 0x0000000b,
@@ -207,7 +207,7 @@ typedef enum _T_eEtherCAT_Vendor
 	ecvendor_eaton                              = 0x000001c7,
     ecvendor_delta_electronics                  = 0x000001dd,
 	ecvendor_xeikon                             = 0x000001df,
-	ecvendor_numatics                           = 0x000001e1,	
+	ecvendor_numatics                           = 0x000001e1,
     ecvendor_amk                                = 0x000001eb,
 	ecvendor_robatech                           = 0x000001f4,
     ecvendor_national_instruments               = 0x000001F9,
@@ -1972,7 +1972,7 @@ typedef enum _T_eEtherCAT_Vendor
 	ecvendor_green_field                        = 0x55aa55aa,
 	ecvendor_jt3                                = 0x55aa55bb,
 	ecvendor_volvo                              = 0x56475454,
-	ecvendor_megatec                            = 0x6167656d,	
+	ecvendor_megatec                            = 0x6167656d,
     ecvendor_arte_motion                        = 0x65547241,
     ecvendor_chinese_academy_ioe                = 0x66666666,
 	ecvendor_shenzhen_just_motion               = 0x66668888,
@@ -1993,7 +1993,7 @@ typedef enum _T_eEtherCAT_Vendor
 	ecvendor_jinoid                             = 0xbcda0001,
 	ecvendor_bertec                             = 0xbe78ec01,
 	ecvendor_innovasic                          = 0xc0decafe,
-	ecvendor_puloonc                            = 0xd4c3b2a1,	
+	ecvendor_puloonc                            = 0xd4c3b2a1,
     ecvendor_handtmann                          = 0xdeadbeef,
 	ecvendor_dewesoft                           = 0xdebe50f7,
 
@@ -2244,6 +2244,7 @@ typedef enum _T_eEtherCAT_ProductCode
 /*-DEFINES-------------------------------------------------------------------*/
 #define IGNORE_SERIAL ((EC_T_DWORD)(-1))
 
+EC_T_BOOL CalculateBusSize(T_EC_DEMO_APP_CONTEXT* pAppContext);
 EC_T_BOOL PrintSlaveInfos(T_EC_DEMO_APP_CONTEXT* pAppContext);
 EC_T_VOID PrintCfgSlavesInfo(T_EC_DEMO_APP_CONTEXT* pAppContext);
 EC_T_VOID PrintBusSlavesInfo(T_EC_DEMO_APP_CONTEXT* pAppContext);
@@ -2263,10 +2264,9 @@ EC_T_BOOL FindCfgSlaveGetFixedAddr(
     EC_T_WORD*             pwStationAddr          /**< [out]  Station address of slave */
 );
 
-EC_T_CHAR* SlaveVendorText(T_eEtherCAT_Vendor eVendorId);
-EC_T_CHAR* SlaveProdCodeText(T_eEtherCAT_Vendor      eVendorId,
-                             T_eEtherCAT_ProductCode eProductCode);
-EC_T_CHAR* ESCTypeText(EC_T_BYTE   byESCType);
+const EC_T_CHAR* SlaveVendorText(T_eEtherCAT_Vendor eVendorId);
+const EC_T_CHAR* SlaveProdCodeText(T_eEtherCAT_Vendor eVendorId, T_eEtherCAT_ProductCode eProductCode);
+const EC_T_CHAR* ESCTypeText(EC_T_BYTE   byESCType);
 
 #endif /* INC_ECSLAVEINFO */
 

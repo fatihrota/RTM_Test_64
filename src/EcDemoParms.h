@@ -16,14 +16,14 @@
 #else
 #define MASTER_CFG_ECAT_MAX_BUS_SLAVES         8    /* max number of pre-allocated bus slave objects */
 #define MASTER_CFG_MAX_ACYC_FRAMES_QUEUED     32    /* max number of acyc frames queued, 127 = the absolute maximum number */
-#define MASTER_CFG_MAX_ACYC_BYTES_PER_CYC    1400    /* max number of bytes sent during eUsrJob_SendAcycFrames within one cycle */
+#define MASTER_CFG_MAX_ACYC_BYTES_PER_CYC    512    /* max number of bytes sent during eUsrJob_SendAcycFrames within one cycle */
 #endif /* EC_DEMO_TINY */
 #define MASTER_CFG_MAX_ACYC_CMD_RETRIES        3
 
 #define ETHERCAT_STATE_CHANGE_TIMEOUT      15000    /* master state change timeout in ms */
 #define ETHERCAT_SCANBUS_TIMEOUT           10000    /* scanbus timeout in ms, see also EC_SB_DEFAULTTIMEOUT */
 
-#define COMMAND_LINE_BUFFER_LENGTH 1400
+#define COMMAND_LINE_BUFFER_LENGTH 512
 #define MAX_LINKLAYER   5
 
 #if (defined EC_SIMULATOR_DS402)
@@ -57,6 +57,7 @@ typedef struct _T_EC_DEMO_APP_PARMS
     EC_T_DWORD          dwMasterLogLevel;               /* master stack log level (derived from verbosity level) */
     EC_T_CHAR           szLogFileprefix[64];            /* log file prefix string */
     /* RAS */
+    EC_T_BOOL           bStartRasServer;
     EC_T_WORD           wRasServerPort;                 /* remote access server port */
     EC_T_BYTE           abyRasServerIpAddress[4];       /* remote access server IP address */
     EC_T_BOOL           bRasAccessControlEnabled;       /* remote access server access control enabled*/
@@ -98,6 +99,10 @@ typedef struct _T_EC_DEMO_APP_PARMS
     EC_T_DWORD          dwDS402NumSlaves;               /* number of DS402 simulated slaves */
     EC_T_WORD           awDS402SlaveAddr[DEMO_MAX_NUM_OF_AXIS]; /* station fixed adresses of DS402 simulated slaves*/
 #endif
+#if (defined EC_EAP)
+    /* EAP */
+    EC_T_BYTE           abyIpAddress[4];                /* IP address */
+#endif
 } T_EC_DEMO_APP_PARMS;
 
 /* demo application context */
@@ -111,7 +116,8 @@ typedef struct _T_EC_DEMO_APP_CONTEXT
     EC_T_BOOL                 bJobTaskShutdown;         /* job task shutdown request flag */
     class CEmNotification*    pNotificationHandler;     /* notification handler */
     EC_T_VOID*                pvCycFrameReceivedEvent;  /* cyclic frame received event */
-    EC_T_TSC_MEAS_DESC        TscMeasDesc;              /* performance measurement descriptor */
+    EC_T_BOOL                 bPerfMeasEnabled;         /* performance measurements enabled */
+    EC_T_VOID*                pvPerfMeas;               /* performance measurement object */
     struct _T_MY_APP_DESC*    pMyAppDesc;               /* my app descriptor */
     struct _T_MASTER_RED_DEMO_PARMS* pMasterRedParms;   /* master redundancy parameter */
 } T_EC_DEMO_APP_CONTEXT;
@@ -121,7 +127,8 @@ extern volatile EC_T_BOOL  bRun;                        /* global demo run flag 
 
 /*-FUNCTION DECLARATION------------------------------------------------------*/
 EC_T_VOID  ResetAppParms(T_EC_DEMO_APP_CONTEXT* pAppContext, T_EC_DEMO_APP_PARMS* pAppParms);
-EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_CHAR* szCommandLine, T_EC_DEMO_APP_PARMS* pAppParms);
+EC_T_VOID  FreeAppParms(T_EC_DEMO_APP_CONTEXT* pAppContext, T_EC_DEMO_APP_PARMS* pAppParms);
+EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, const EC_T_CHAR* szCommandLine, T_EC_DEMO_APP_PARMS* pAppParms);
 EC_T_VOID  ShowSyntaxCommon(T_EC_DEMO_APP_CONTEXT* pAppContext);
 
 #endif /* INC_ECDEMOPARMS_H */

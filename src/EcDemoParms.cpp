@@ -14,25 +14,43 @@
 /*-GLOBAL VARIABLES----------------------------------------------------------*/
 volatile EC_T_BOOL bRun = EC_TRUE;
 
-/*-DEFINES-------------------------------------------------------------------*/
-#ifndef BIT2BYTE
-    #define BIT2BYTE(x) \
-        (((x)+7)>>3)
-#endif
-
 /*-FUNCTION-DEFINITIONS------------------------------------------------------*/
 EC_T_VOID ResetAppParms(T_EC_DEMO_APP_CONTEXT* pAppContext, T_EC_DEMO_APP_PARMS* pAppParms)
 {
     EC_UNREFPARM(pAppContext);
 
     OsMemset(pAppParms, 0, sizeof(T_EC_DEMO_APP_PARMS));
+    EC_CPUSET_ZERO(pAppParms->CpuSet);
     pAppParms->eCnfType = eCnfType_GenPreopENI;
     pAppParms->dwBusCycleTimeUsec = 1000;
     pAppParms->dwDemoDuration = 600000;
     pAppParms->bConnectHcGroups = EC_TRUE;
 }
 
-EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_CHAR* szCommandLine, T_EC_DEMO_APP_PARMS* pAppParms)
+EC_T_VOID FreeAppParms(T_EC_DEMO_APP_CONTEXT* pAppContext, T_EC_DEMO_APP_PARMS* pAppParms)
+{
+#if (!defined ATEMRAS_CLIENT)
+    EC_T_DWORD dwIdx = 0;
+
+    /* free link parms created by CreateLinkParmsFromCmdLine() */
+    for (dwIdx = 0; dwIdx < MAX_LINKLAYER; dwIdx++)
+    {
+        if (EC_NULL != pAppParms->apLinkParms[dwIdx])
+        {
+            FreeLinkParms(pAppParms->apLinkParms[dwIdx]);
+            pAppParms->apLinkParms[dwIdx] = EC_NULL;
+        }
+    }
+#endif /* !ATEMRAS_CLIENT */
+    EC_UNREFPARM(pAppContext);
+
+    /* free app parameters */
+    SafeOsFree(pAppParms->NotifyParms.pbyInBuf);
+    SafeOsFree(pAppParms->NotifyParms.pbyOutBuf);
+    SafeOsFree(pAppParms->NotifyParms.pdwNumOutData);
+}
+
+EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, const EC_T_CHAR* szCommandLine, T_EC_DEMO_APP_PARMS* pAppParms)
 {
     EC_T_DWORD dwRetVal = EC_E_ERROR;
     EC_T_INT   nVerbose = 1;
@@ -119,7 +137,7 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
                 }
                 pAppParms->dwBusCycleTimeUsec = OsStrtol(ptcWord, EC_NULL, 0);
             }
-        }        
+        }
         else if (0 == OsStricmp(ptcWord, "-ctloff"))
         {
             pAppParms->bDcmControlLoopDisabled = EC_TRUE;
@@ -300,7 +318,7 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
                 goto Exit;
             }
             {
-                EC_T_CHAR* szHexDump = ptcWord;
+                const EC_T_CHAR* szHexDump = ptcWord;
 
                 for (EC_T_DWORD dwInBufIx = 0; dwInBufIx < pAppParms->NotifyParms.dwInBufSize; dwInBufIx++)
                 {
@@ -338,7 +356,7 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
 #endif
         else if (0 == OsStricmp(ptcWord, "-rem"))
         {
-            EC_T_CHAR*  ptcTmp = EC_NULL;
+            const EC_T_CHAR* ptcTmp = EC_NULL;
             EC_T_INT    nCnt = 0;
 
             /* get next word */
@@ -380,6 +398,43 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
                 }
             }
         }
+#if (defined EC_EAP)
+        else if (0 == OsStricmp(ptcWord, "-ip"))
+        {
+            const EC_T_CHAR*  ptcTmp = EC_NULL;
+            EC_T_INT    nCnt = 0;
+
+            /* get next word */
+            ptcWord = OsStrtok(EC_NULL, ".");
+
+            if ((ptcWord == EC_NULL) || (OsStrncmp(ptcWord, "-", 1) == 0))
+            {
+                dwRetVal = EC_E_INVALIDPARM;
+                    goto Exit;
+            }
+            /* get IP address */
+            ptcTmp = ptcWord;
+            for (nCnt = 0; nCnt < 4; nCnt++)
+            {
+                if (ptcTmp == EC_NULL)
+                {
+                    dwRetVal = EC_E_INVALIDPARM;
+                    goto Exit;
+                }
+
+                pAppParms->abyIpAddress[nCnt] = (EC_T_BYTE)OsStrtol(ptcTmp, EC_NULL, 0);
+
+                if (nCnt < 2)
+                {
+                    ptcTmp = OsStrtok(EC_NULL, ".");
+                }
+                else if (nCnt < 3)
+                {
+                    ptcTmp = OsStrtok(EC_NULL, " ");
+                }
+            }
+        }
+#endif
         else if (0 == OsStricmp(ptcWord, "-rmod"))
         {
             pAppParms->bReadMasterOd = EC_TRUE;
@@ -403,14 +458,14 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
                 pAppParms->SetProcessDataBits.dwDuration = (EC_T_WORD)OsStrtol(ptcTmp, EC_NULL, 10);
             }
         }
-#if (defined ATEMRAS_SERVER)
+#if (defined INCLUDE_RAS_SERVER)
         else if (0 == OsStricmp(ptcWord, "-sp"))
         {
+            pAppParms->bStartRasServer = EC_TRUE;
+
             ptcWord = OsStrtok(NULL, " ");
             if ((ptcWord == NULL) || (OsStrncmp(ptcWord, "-", 1) == 0))
             {
-                pAppParms->wRasServerPort = ATEMRAS_DEFAULT_PORT;
-
                 /* optional sub parameter not found, use the current word for the next parameter */
                 bGetNextWord = EC_FALSE;
             }
@@ -423,7 +478,7 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
         else if (0 == OsStricmp(ptcWord, "-standby"))
         {
             pAppParms->bMasterRedPermanentStandby = EC_TRUE;
-        }        
+        }
         else if (0 == OsStricmp(ptcWord, "-t"))
         {
             ptcWord = OsStrtok(NULL, " ");
@@ -433,7 +488,7 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
                 goto Exit;
             }
             pAppParms->dwDemoDuration = OsStrtol(ptcWord, EC_NULL, 0);
-        }        
+        }
         else if (0 == OsStricmp(ptcWord, "-v"))
         {
             ptcWord = OsStrtok(NULL, " ");
@@ -456,6 +511,12 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
             pAppParms->bDaqRecorder = EC_TRUE;
             OsSnprintf(pAppParms->szDaqRecorder, sizeof(pAppParms->szDaqRecorder) - 1, "%s", ptcWord);
         }
+#endif /* INCLUDE_DAQ_SUPPORT */
+#if (defined EC_SIMULATOR)
+        else if (0 == OsStricmp(ptcWord, "-disablepdimage"))
+        {
+            pAppParms->bDisableProcessDataImage = EC_TRUE;
+        }
 #endif
 #if (defined EC_SIMULATOR_DS402)
         else if (0 == OsStricmp(ptcWord, "-ds402"))
@@ -470,14 +531,14 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
             pAppParms->dwDS402NumSlaves = 0;
             for (;;)
             {
-                EC_T_CHAR* ptcTempWord = ptcWord;
+                const EC_T_CHAR* ptcTempWord = ptcWord;
                 EC_T_WORD wAddr = (EC_T_WORD)strtol(ptcWord, &ptcWord, 10);
 
                 if (ptcWord == ptcTempWord)
                 {
                     break;
                 }
-                
+
                 if (pAppParms->dwDS402NumSlaves == DEMO_MAX_NUM_OF_AXIS)
                 {
                     dwRetVal = EC_E_INVALIDPARM;
@@ -493,13 +554,13 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
                 ptcWord++;
             }
         }
-#endif
+#endif /* EC_SIMULATOR_DS402 */
 #if (!defined ATEMRAS_CLIENT)
         else
         {
             EC_T_DWORD dwRes = EC_E_NOERROR;
 
-            dwRes = CreateLinkParmsFromCmdLine(&ptcWord, (EC_T_CHAR**)&szCommandLineTmp, &tcStorage, &bGetNextWord, 
+            dwRes = CreateLinkParmsFromCmdLine(&ptcWord, (EC_T_CHAR**)&szCommandLineTmp, &tcStorage, &bGetNextWord,
                 &pAppParms->apLinkParms[dwNumLinkLayer], &pAppParms->TtsParms);
             if (EC_E_NOERROR != dwRes)
             {
@@ -535,7 +596,7 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
         break;
     case 3:
         pAppParms->dwAppLogLevel   = EC_LOG_LEVEL_VERBOSE;
-        pAppParms->dwMasterLogLevel = EC_LOG_LEVEL_WARNING;     
+        pAppParms->dwMasterLogLevel = EC_LOG_LEVEL_WARNING;
         pAppParms->bPerfMeasShowCyclic = pAppParms->bPerfMeasEnabled;
         pAppParms->bDcmLogEnabled   = EC_TRUE;
         break;
@@ -545,13 +606,13 @@ EC_T_DWORD SetAppParmsFromCommandLine(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_C
         pAppParms->bPerfMeasShowCyclic = pAppParms->bPerfMeasEnabled;
         pAppParms->bDcmLogEnabled   = EC_TRUE;
         break;
-    case 5:  
-        pAppParms->dwAppLogLevel   = EC_LOG_LEVEL_VERBOSE;      
+    case 5:
+        pAppParms->dwAppLogLevel   = EC_LOG_LEVEL_VERBOSE;
         pAppParms->dwMasterLogLevel = EC_LOG_LEVEL_VERBOSE;
         pAppParms->bPerfMeasShowCyclic = pAppParms->bPerfMeasEnabled;
         pAppParms->bDcmLogEnabled   = EC_TRUE;
         break;
-    default: 
+    default:
         pAppParms->dwAppLogLevel   = EC_LOG_LEVEL_VERBOSE_CYC;
         pAppParms->dwMasterLogLevel = EC_LOG_LEVEL_VERBOSE_CYC;
         pAppParms->bPerfMeasShowCyclic = EC_TRUE;
@@ -587,9 +648,12 @@ EC_T_VOID ShowSyntaxCommon(T_EC_DEMO_APP_CONTEXT* pAppContext)
     EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "     prefix          prefix\n"));
     EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "   -lic              Use License key\n"));
     EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "     key             license key\n"));
-#if (defined ATEMRAS_SERVER)
+#if (defined INCLUDE_RAS_SERVER)
     EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "   -sp               Start RAS server\n"));
     EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "    [port            port (default = %d)]\n", ATEMRAS_DEFAULT_PORT));
+#endif
+#if (defined EC_SIMULATOR)
+    EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "   -disablepdimage   Disable Process Data Image (Master ENI / Simulator ENI mismatch support)\n"));
 #endif
 #if (defined EC_SIMULATOR_DS402)
     EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "   -ds402            Simulate DS402 profile for given slaves\n"));

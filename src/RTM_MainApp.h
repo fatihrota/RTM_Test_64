@@ -23,6 +23,7 @@
 #include "EcDemoApp.h"
 #include <rtosLib.h>
 #include "RTM_TestRun.h"
+#include "RtosComm.h"
 /*============================================================================*/
 /* Forward declarations                                                       */
 /*============================================================================*/
@@ -33,7 +34,6 @@
 
 #define ECAT_MSG_SIZE_PER_CC			21
 
-#define MAX_ETHERCAT_MSG_SIZE		200
 /*============================================================================*/
 /* Type definitions                                                           */
 /*============================================================================*/
@@ -58,14 +58,6 @@ public:
 
 	static void cleanInstance();
 
-	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_Data_fromNRTM;
-	RTOSLIB_HANDLE          hQueue_Data_fromNRTM  = NULL;
-	RTOSMSGQUEUE_INFO       Info_Data_fromNRTM;
-
-	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions_Data_toNRTM;
-	RTOSLIB_HANDLE          hQueue_Data_toNRTM  = NULL;
-	RTOSMSGQUEUE_INFO       Info_Data_toNRTM;
-
 	EC_T_VOID createTestThreads(EC_T_VOID* pvAppContext);
 
 	EC_T_VOID copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg);
@@ -76,6 +68,7 @@ public:
 	EC_T_BYTE receivedEtherCatArray[MAX_ETHERCAT_MSG_SIZE];
 
 	EC_T_BYTE rcvSignalFromNRTM[MAX_ETHERCAT_MSG_SIZE];
+	EC_T_BYTE sndSignalToNRTM[MAX_ETHERCAT_MSG_SIZE];
 
 	std::vector<RTM_TestRun> testVector;	/* Holds seperate tests */
 private:

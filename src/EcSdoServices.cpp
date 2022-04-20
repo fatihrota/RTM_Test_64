@@ -2,7 +2,7 @@
 * EcSdoServices.cpp
 * Copyright                acontis technologies GmbH, Ravensburg, Germany
 * Response                 Holger Oelhaf
-* Description              
+* Description
 *---------------------------------------------------------------------------*/
 
 /*-INCLUDES------------------------------------------------------------------*/
@@ -12,11 +12,6 @@
 
 /*-DEFINES-------------------------------------------------------------------*/
 #define LOG_BUFFER_SIZE         ((EC_T_DWORD)0x1000)
-
-#ifndef BIT2BYTE
-    #define BIT2BYTE(x) \
-        (((x)+7)>>3)
-#endif
 
 /*-FUNCTION-DEFINITIONS------------------------------------------------------*/
 EC_T_VOID FlushLogBuffer(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_CHAR* szLogBuffer)
@@ -30,17 +25,17 @@ EC_T_VOID FlushLogBuffer(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_CHAR* szLogBuf
 
 /********************************************************************************/
 /** \brief  Wait for mailbox transfer completion, log error
-*
-* \return N/A
-*/
+ *
+ * \return N/A
+ */
 EC_T_VOID HandleMbxTferReqError(
     T_EC_DEMO_APP_CONTEXT* pAppContext,
-    EC_T_CHAR*               szErrMsg,          /**< [in] error message */
-    EC_T_DWORD               dwErrorCode,       /**< [in] basic error code */
-    EC_T_MBXTFER*            pMbxTfer           /**< [in] mbx transfer object */
+    const EC_T_CHAR*       szErrMsg,          /**< [in] error message */
+    EC_T_DWORD             dwErrorCode,       /**< [in] basic error code */
+    EC_T_MBXTFER*          pMbxTfer           /**< [in] mbx transfer object */
 )
 {
-    /* wait for MbxTfer completion, but let application finish if master never returns MbxTfer object (may happen using RAS) */  
+    /* wait for MbxTfer completion, but let application finish if master never returns MbxTfer object (may happen using RAS) */
     EC_T_DWORD dwWorstCaseTimeout = 10;
 
     /*
@@ -58,7 +53,7 @@ EC_T_VOID HandleMbxTferReqError(
         EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "%s: timeout waiting for mailbox transfer response\n", szErrMsg));
         goto Exit;
     }
-    
+
     if (EC_E_NOERROR != dwErrorCode)
     {
         EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "%s: MbxTferReqError: %s (0x%lx)\n", szErrMsg, ecatGetText(dwErrorCode), dwErrorCode));
@@ -71,20 +66,19 @@ Exit:
 #if (defined INCLUDE_MASTER_OBD)
 /***************************************************************************************************/
 /**
-\brief  Parse DIAG Message.
-*/
+ * \brief  Parse DIAG Message.
+ */
 EC_T_VOID ParseDiagMsg(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_OBJ10F3_DIAGMSG* pDiag)
 {
-    static
-    EC_T_CHAR               szOutPut[0x200];
-    EC_T_CHAR*              pszFormat       = EC_NULL;
-    EC_T_CHAR*              pszWork         = EC_NULL;
-    EC_T_DWORD              dwParse         = 0;
-    EC_T_DWORD              dwParseLimit    = 0;
-    EC_T_BYTE*              pbyParamPtr     = EC_NULL;
-    EC_T_WORD               wParmFlags      = 0;
-    EC_T_WORD               wParmSize       = 0;
-    EC_T_CHAR*              pszSeverity     = EC_NULL;
+    static EC_T_CHAR szOutPut[0x200];
+    const EC_T_CHAR* pszFormat       = EC_NULL;
+    EC_T_CHAR*       pszWork         = EC_NULL;
+    EC_T_DWORD       dwParse         = 0;
+    EC_T_DWORD       dwParseLimit    = 0;
+    EC_T_BYTE*       pbyParamPtr     = EC_NULL;
+    EC_T_WORD        wParmFlags      = 0;
+    EC_T_WORD        wParmSize       = 0;
+    const EC_T_CHAR* pszSeverity     = EC_NULL;
 
     if (EC_NULL == pDiag)
     {
@@ -93,7 +87,7 @@ EC_T_VOID ParseDiagMsg(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_OBJ10F3_DIAGMSG*
 
     OsMemset(szOutPut, 0, sizeof(szOutPut));
 
-    pszFormat = (EC_T_CHAR*)ecatGetText((EC_T_DWORD)pDiag->wTextId);
+    pszFormat = ecatGetText((EC_T_DWORD)pDiag->wTextId);
 
     if( EC_NULL == pszFormat )
     {
@@ -102,10 +96,10 @@ EC_T_VOID ParseDiagMsg(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_OBJ10F3_DIAGMSG*
 
     switch( pDiag->wFlags & 0x0F)
     {
-    case DIAGFLAGINFO:  pszSeverity  = (EC_T_CHAR*)"INFO"; break;
-    case DIAGFLAGWARN:  pszSeverity  = (EC_T_CHAR*)"WARN"; break;
-    case DIAGFLAGERROR: pszSeverity  = (EC_T_CHAR*)" ERR"; break;
-    default:            pszSeverity  = (EC_T_CHAR*)" UNK"; break;
+    case DIAGFLAGINFO:  pszSeverity  = "INFO"; break;
+    case DIAGFLAGWARN:  pszSeverity  = "WARN"; break;
+    case DIAGFLAGERROR: pszSeverity  = " ERR"; break;
+    default:            pszSeverity  = " UNK"; break;
     }
 
     dwParseLimit = (EC_T_DWORD) OsStrlen(pszFormat);
@@ -169,10 +163,10 @@ EC_T_VOID ParseDiagMsg(T_EC_DEMO_APP_CONTEXT* pAppContext, EC_T_OBJ10F3_DIAGMSG*
                             } break;
                         case DIAGPARMTYPETEXTID:
                             {
-                                EC_T_CHAR*  pszTextFromId   = EC_NULL;
+                                const EC_T_CHAR* pszTextFromId = EC_NULL;
 
                                 pbyParamPtr += sizeof(EC_T_WORD);
-                                pszTextFromId = (EC_T_CHAR*)ecatGetText((EC_T_DWORD)EC_GETWORD(pbyParamPtr));
+                                pszTextFromId = ecatGetText((EC_T_DWORD)EC_GETWORD(pbyParamPtr));
                                 if( EC_NULL == pszTextFromId )
                                 {
                                     pszWork[0] = '%';
@@ -489,11 +483,11 @@ Exit:
 
 /********************************************************************************/
 /** \brief  Read object dictionary.
-*
-* This function reads the CoE object dictionary.
-*
-* \return EC_E_NOERROR on success, error code otherwise.
-*/
+ *
+ * This function reads the CoE object dictionary.
+ *
+ * \return EC_E_NOERROR on success, error code otherwise.
+ */
 EC_T_DWORD CoeReadObjectDictionary(
     T_EC_DEMO_APP_CONTEXT* pAppContext,
     EC_T_BOOL*           pbStopReading,    /**< [in]   Pointer to shutdwon flag */
@@ -517,7 +511,7 @@ EC_T_DWORD CoeReadObjectDictionary(
     EC_T_BYTE*          pbyODLTferBuffer        = EC_NULL;      /* OD List */
     EC_T_BYTE*          pbyOBDescTferBuffer     = EC_NULL;      /* OB Desc */
     EC_T_BYTE*          pbyGetEntryTferBuffer   = EC_NULL;      /* Entry Desc */
-    EC_T_MBXTFER_DESC   MbxTferDesc             = {0};          /* mailbox transfer descriptor */
+    EC_T_MBXTFER_DESC   oMbxTferDesc;                           /* mailbox transfer descriptor */
     EC_T_MBXTFER*       pMbxGetODLTfer          = EC_NULL;      /* mailbox transfer object for OD list upload */
     EC_T_MBXTFER*       pMbxGetObDescTfer       = EC_NULL;      /* mailbox transfer object for Object description upload */
     EC_T_MBXTFER*       pMbxGetEntryDescTfer    = EC_NULL;      /* mailbox transfer object for Entry description upload */
@@ -529,6 +523,8 @@ EC_T_DWORD CoeReadObjectDictionary(
     EC_T_BYTE           byValueInfoType         = 0;
     EC_T_DWORD          dwUniqueTransferId      = 0;
     EC_T_BOOL           bReadingMasterOD        = EC_FALSE;
+
+    OsMemset(&oMbxTferDesc, 0, sizeof(EC_T_MBXTFER_DESC));
 
     /* Check Parameters */
     if ((EC_NULL == pAppContext) || (EC_NULL == pbStopReading) || (EC_NOWAIT == dwTimeout))
@@ -562,10 +558,10 @@ EC_T_DWORD CoeReadObjectDictionary(
 
     /* create required MBX Transfer Objects */
     /* mailbox transfer object for OD list upload */
-    MbxTferDesc.dwMaxDataLen        = CROD_ODLTFER_SIZE;
-    MbxTferDesc.pbyMbxTferDescData  = pbyODLTferBuffer;
+    oMbxTferDesc.dwMaxDataLen        = CROD_ODLTFER_SIZE;
+    oMbxTferDesc.pbyMbxTferDescData  = pbyODLTferBuffer;
 
-    pMbxGetODLTfer = emMbxTferCreate(pAppContext->dwInstanceId, &MbxTferDesc);
+    pMbxGetODLTfer = emMbxTferCreate(pAppContext->dwInstanceId, &oMbxTferDesc);
     if (EC_NULL == pMbxGetODLTfer)
     {
         dwRetVal = EC_E_NOMEMORY;
@@ -573,10 +569,10 @@ EC_T_DWORD CoeReadObjectDictionary(
     }
 
     /* mailbox transfer object for Object description upload */
-    MbxTferDesc.dwMaxDataLen        = CROD_OBDESC_SIZE;
-    MbxTferDesc.pbyMbxTferDescData  = pbyOBDescTferBuffer;
+    oMbxTferDesc.dwMaxDataLen        = CROD_OBDESC_SIZE;
+    oMbxTferDesc.pbyMbxTferDescData  = pbyOBDescTferBuffer;
 
-    pMbxGetObDescTfer = emMbxTferCreate(pAppContext->dwInstanceId, &MbxTferDesc);
+    pMbxGetObDescTfer = emMbxTferCreate(pAppContext->dwInstanceId, &oMbxTferDesc);
     if (EC_NULL == pMbxGetObDescTfer)
     {
         dwRetVal = EC_E_NOMEMORY;
@@ -584,10 +580,10 @@ EC_T_DWORD CoeReadObjectDictionary(
     }
 
     /* mailbox transfer object for Entry description upload */
-    MbxTferDesc.dwMaxDataLen        = CROD_ENTRYDESC_SIZE;
-    MbxTferDesc.pbyMbxTferDescData  = pbyGetEntryTferBuffer;
+    oMbxTferDesc.dwMaxDataLen        = CROD_ENTRYDESC_SIZE;
+    oMbxTferDesc.pbyMbxTferDescData  = pbyGetEntryTferBuffer;
 
-    pMbxGetEntryDescTfer = emMbxTferCreate(pAppContext->dwInstanceId, &MbxTferDesc);
+    pMbxGetEntryDescTfer = emMbxTferCreate(pAppContext->dwInstanceId, &oMbxTferDesc);
     if (EC_NULL == pMbxGetEntryDescTfer)
     {
         dwRetVal = EC_E_NOMEMORY;
@@ -608,10 +604,17 @@ EC_T_DWORD CoeReadObjectDictionary(
     }
 
     /* wait until transfer object is available incl. logging error */
-    HandleMbxTferReqError(pAppContext, (EC_T_CHAR*)"CoeReadObjectDictionary: Error in emCoeGetODList(ALL)", dwRes, pMbxGetODLTfer);
+    HandleMbxTferReqError(pAppContext, "CoeReadObjectDictionary: Error in emCoeGetODList(ALL)", dwRes, pMbxGetODLTfer);
     if (EC_E_NOERROR != dwRes)
     {
         dwRetVal = dwRes;
+        goto Exit;
+    }
+
+    if (0 == pMbxGetODLTfer->MbxData.CoE_ODList.wLen)
+    {
+        EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "emCoeGetODList didn't return any objects\n"));
+        dwRetVal = EC_E_NOERROR;
         goto Exit;
     }
 
@@ -632,7 +635,7 @@ EC_T_DWORD CoeReadObjectDictionary(
 
     /* now display Entries of ODList and store non-empty values */
     EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "Complete OD list:\n"));
-    
+
     /* iterate through all entries in list */
     for (wODListLen = 0, wIndex = 0; wIndex < (pMbxGetODLTfer->MbxData.CoE_ODList.wLen); wIndex++)
     {
@@ -672,7 +675,7 @@ EC_T_DWORD CoeReadObjectDictionary(
     }
 
     /* wait until transfer object is available incl. logging error */
-    HandleMbxTferReqError(pAppContext, (EC_T_CHAR*)"CoeReadObjectDictionary: Error in emCoeGetODList(RxPdoMap)", dwRes, pMbxGetODLTfer);
+    HandleMbxTferReqError(pAppContext, "CoeReadObjectDictionary: Error in emCoeGetODList(RxPdoMap)", dwRes, pMbxGetODLTfer);
     if (EC_E_NOERROR != dwRes)
     {
         dwRetVal = dwRes;
@@ -707,7 +710,7 @@ EC_T_DWORD CoeReadObjectDictionary(
     }
 
     /* wait until transfer object is available incl. logging error */
-    HandleMbxTferReqError(pAppContext, (EC_T_CHAR*)"CoeReadObjectDictionary: Error in emCoeGetODList(TxPdoMap)", dwRes, pMbxGetODLTfer);
+    HandleMbxTferReqError(pAppContext, "CoeReadObjectDictionary: Error in emCoeGetODList(TxPdoMap)", dwRes, pMbxGetODLTfer);
     if (EC_E_NOERROR != dwRes)
     {
         dwRetVal = dwRes;
@@ -738,7 +741,7 @@ EC_T_DWORD CoeReadObjectDictionary(
     EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "*************************************************************\n"));
     EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "****                  OBJECT DESCRIPTION                 ****\n"));
     EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "*************************************************************\n"));
-    
+
     /* init value info type */
     byValueInfoType = EC_COE_ENTRY_ObjAccess
                     | EC_COE_ENTRY_ObjCategory
@@ -767,7 +770,7 @@ EC_T_DWORD CoeReadObjectDictionary(
         }
 
         /* wait until transfer object is available incl. logging error */
-        HandleMbxTferReqError(pAppContext, (EC_T_CHAR*)"CoeReadObjectDictionary: Error in emCoeGetObjectDesc", dwRes, pMbxGetODLTfer);
+        HandleMbxTferReqError(pAppContext, "CoeReadObjectDictionary: Error in emCoeGetObjectDesc", dwRes, pMbxGetODLTfer);
         if (EC_E_NOERROR != dwRes)
         {
             dwRetVal = dwRes;
@@ -777,11 +780,11 @@ EC_T_DWORD CoeReadObjectDictionary(
         /* display ObjectDesc */
         if (pAppContext->AppParms.dwAppLogLevel >= EC_LOG_LEVEL_INFO)
         {
-            EC_T_WORD   wNameLen                    = 0;
-            EC_T_CHAR   szObName[MAX_OBNAME_LEN]    = {0};
+            EC_T_WORD wNameLen = 0;
+            EC_T_CHAR szObName[MAX_OBNAME_LEN];
 
             wNameLen = pMbxGetObDescTfer->MbxData.CoE_ObDesc.wObNameLen;
-            wNameLen = (EC_T_WORD)EC_MIN(wNameLen, MAX_OBNAME_LEN - 1);
+            wNameLen = EC_AT_MOST(wNameLen, (EC_T_WORD)(MAX_OBNAME_LEN - 1));
 
             OsStrncpy(szObName, pMbxGetObDescTfer->MbxData.CoE_ObDesc.pchObName, (EC_T_INT)wNameLen);
             szObName[wNameLen] = '\0';
@@ -831,19 +834,19 @@ EC_T_DWORD CoeReadObjectDictionary(
             }
 
             /* handle MBX Tfer errors and wait until tfer object is available */
-            HandleMbxTferReqError(pAppContext, (EC_T_CHAR*)"CoeReadObjectDictionary: Error in emCoeGetEntryDesc", dwRes, pMbxGetEntryDescTfer);
+            HandleMbxTferReqError(pAppContext, "CoeReadObjectDictionary: Error in emCoeGetEntryDesc", dwRes, pMbxGetEntryDescTfer);
 
             /* display EntryDesc */
             {
-                EC_T_CHAR   szAccess[50]        = {0};
+                EC_T_CHAR   szAccess[50];
                 EC_T_INT    nAccessIdx          = 0;
-                EC_T_CHAR   szPdoMapInfo[50]    = {0};
+                EC_T_CHAR   szPdoMapInfo[50];
                 EC_T_INT    nDataIdx            = 0;
-                EC_T_CHAR   szUnitType[50]      = {0};
-                EC_T_CHAR   szDefaultValue[10]  = {0};
-                EC_T_CHAR   szMinValue[10]      = {0};
-                EC_T_CHAR   szMaxValue[10]      = {0};
-                EC_T_CHAR   szDescription[50]   = {0};
+                EC_T_CHAR   szUnitType[50];
+                EC_T_CHAR   szDefaultValue[10];
+                EC_T_CHAR   szMinValue[10];
+                EC_T_CHAR   szMaxValue[10];
+                EC_T_CHAR   szDescription[50];
 
                 EC_T_DWORD  dwUnitType          = 0;
                 EC_T_BYTE*  pbyDefaultValue     = EC_NULL;
@@ -929,7 +932,7 @@ EC_T_DWORD CoeReadObjectDictionary(
 
                 if (nDataIdx + 1 <= pMbxGetEntryDescTfer->MbxData.CoE_EntryDesc.wDataLen)
                 {
-                    OsSnprintf(szDescription, EC_MIN((EC_T_INT)(pMbxGetEntryDescTfer->MbxData.CoE_EntryDesc.wDataLen - nDataIdx + 1), (EC_T_INT)(sizeof(szDescription) - 1)),
+                    OsSnprintf(szDescription, EC_AT_MOST((EC_T_INT)(pMbxGetEntryDescTfer->MbxData.CoE_EntryDesc.wDataLen - nDataIdx + 1), (EC_T_INT)(sizeof(szDescription) - 1)),
                         "%s", &pMbxGetEntryDescTfer->MbxData.CoE_EntryDesc.pbyData[nDataIdx]);
                 }
 
@@ -959,8 +962,8 @@ EC_T_DWORD CoeReadObjectDictionary(
             /* SDO Upload */
             if (bPerformUpload)
             {
-                EC_T_BYTE   abySDOValue[CROD_MAXSISDO_SIZE] = {0};
-                EC_T_DWORD  dwUploadBytes                   = 0;
+                EC_T_BYTE  abySDOValue[CROD_MAXSISDO_SIZE];
+                EC_T_DWORD dwUploadBytes = 0;
 
                 /* prevent from uploading an write-only object */
                 if (MASTER_SLAVE_ID != dwNodeId)
@@ -980,7 +983,7 @@ EC_T_DWORD CoeReadObjectDictionary(
                     || ((DEVICE_STATE_OP == (wCurrDevState & DEVICE_STATE_MASK))
                         && (0 == (pMbxGetEntryDescTfer->MbxData.CoE_EntryDesc.byObAccess & EC_COE_ENTRY_Access_R_OP))))
                     {
-                        EcLogMsg(EC_LOG_LEVEL_VERBOSE, (pEcLogContext, EC_LOG_LEVEL_VERBOSE, 
+                        EcLogMsg(EC_LOG_LEVEL_VERBOSE, (pEcLogContext, EC_LOG_LEVEL_VERBOSE,
                             "CoeReadObjectDictionary: skip non-reable entry 0x%04x, SI %d\n", pwODList[wIndex], EC_LOBYTE(wSubIndex)));
                         continue;
                     }
@@ -989,9 +992,7 @@ EC_T_DWORD CoeReadObjectDictionary(
                 /* get object's value */
                 dwRes = emCoeSdoUpload(
                     pAppContext->dwInstanceId, dwNodeId, pwODList[wIndex], EC_LOBYTE(wSubIndex),
-                    abySDOValue, EC_MIN( (EC_T_DWORD)(sizeof(abySDOValue)), (EC_T_DWORD)(((pMbxGetEntryDescTfer->MbxData.CoE_EntryDesc.wBitLen)+7)/8) ),
-                    &dwUploadBytes, dwTimeout, 0
-                                      );
+                    abySDOValue, EC_AT_MOST(BIT2BYTE(pMbxGetEntryDescTfer->MbxData.CoE_EntryDesc.wBitLen), (EC_T_WORD)CROD_MAXSISDO_SIZE), &dwUploadBytes, dwTimeout, 0);
                 if (EC_E_SLAVE_NOT_PRESENT == dwRes)
                 {
                     dwRetVal = dwRes;

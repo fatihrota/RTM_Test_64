@@ -275,10 +275,10 @@ int ECMaster_main(int nArgc, char* ppArgv[])
     OsMemset(&AppContext, 0, sizeof(AppContext));
 
     /* printf logging until logging initialized */
-    pEcLogParms->dwLogLevel = EC_LOG_LEVEL_ERROR;
-    pEcLogParms->pfLogMsg = CAtEmLogging::LogMsgOsPrintf;
-    pEcLogParms->pLogContext = EC_NULL;
-    OsMemcpy(G_pEcLogParms, pEcLogParms, sizeof(EC_T_LOG_PARMS));
+    AppContext.LogParms.dwLogLevel = EC_LOG_LEVEL_ERROR;
+    AppContext.LogParms.pfLogMsg = CAtEmLogging::LogMsgOsPrintf;
+    AppContext.LogParms.pLogContext = EC_NULL;
+    OsMemcpy(G_pEcLogParms, &AppContext.LogParms, sizeof(EC_T_LOG_PARMS));
 
     AppContext.dwInstanceId = INSTANCE_MASTER_DEFAULT;
 
@@ -286,17 +286,15 @@ int ECMaster_main(int nArgc, char* ppArgv[])
     pAppParms->Os.dwSize = sizeof(EC_T_OS_PARMS);
     pAppParms->Os.dwSignature = EC_OS_PARMS_SIGNATURE;
     pAppParms->Os.dwSupportedFeatures = 0xFFFFFFFF;
+    pAppParms->Os.PlatformParms.bConfigMutex = EC_TRUE;
+    pAppParms->Os.PlatformParms.nMutexType = PTHREAD_MUTEX_RECURSIVE_NP;
+    pAppParms->Os.PlatformParms.nMutexProtocol = PTHREAD_PRIO_NONE;
+    OsInit(&pAppParms->Os);
 
     /* OS specific initialization */
-    dwRes = EnableRealtimeEnvironment();
-    if (EC_E_NOERROR != dwRes)
+    EnableRealtimeEnvironment();
     {
-        EcLogMsg(EC_LOG_LEVEL_CRITICAL, (pEcLogContext, EC_LOG_LEVEL_CRITICAL, "ERROR enable realtime environment: %s(0x % lx))\n", ecatGetText(dwRes), dwRes));
-        dwRetVal = dwRes;
-        goto Exit;
-    }
-    {
-        sigset_t SigSet;
+    	sigset_t SigSet;
         int nSigNum = SIGALRM;
         sigemptyset(&SigSet);
         sigaddset(&SigSet, nSigNum);
@@ -358,7 +356,7 @@ int ECMaster_main(int nArgc, char* ppArgv[])
         OsMemcpy(&pLinkParms->LogParms, &pAppContext->LogParms, sizeof(EC_T_LOG_PARMS));
         pLinkParms->LogParms.dwLogLevel = pAppParms->dwMasterLogLevel;
     }
-#ifdef INCLUDE_EMLL_STATIC_LIBRARY
+#if (defined INCLUDE_EMLL_STATIC_LIBRARY)
     OsReplaceGetLinkLayerRegFunc(&DemoGetLinkLayerRegFunc);
 #endif
 
@@ -374,7 +372,7 @@ int ECMaster_main(int nArgc, char* ppArgv[])
         }
     }
 #if (defined INCLUDE_EC_MASTER_JOB_TASK)
-    if (eDcmMode_MasterShift == pAppParms->eDcmMode)
+    if ((eDcmMode_MasterShift == pAppParms->eDcmMode) || (eDcmMode_Dcx == pAppParms->eDcmMode))
     {
         /* current DCM MasterShift implementation based on internal aux clock */
         pAppParms->bUseAuxClock = EC_TRUE;
@@ -392,6 +390,7 @@ int ECMaster_main(int nArgc, char* ppArgv[])
         if (EC_NULL == AppContext.pvJobTaskEvent)
         {
             EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ERROR: insufficient memory to create timing event!\n"));
+            dwRetVal = EC_E_NOMEMORY;
             goto Exit;
         }
 
@@ -416,7 +415,7 @@ int ECMaster_main(int nArgc, char* ppArgv[])
     }
 #endif
 
-    dwRes = EcMasterApp(pAppContext);
+    dwRes = EcDemoApp(pAppContext);
     if (EC_E_NOERROR != dwRes)
     {
         dwRetVal = dwRes;
@@ -471,20 +470,7 @@ Exit:
     /* final OS layer cleanup */
     OsDeinit();
 
-    /* free link parms created by CreateLinkParmsFromCmdLine() */
-    for (dwIdx = 0; dwIdx < MAX_LINKLAYER; dwIdx++)
-    {
-        if (EC_NULL != pAppParms->apLinkParms[dwIdx])
-        {
-            OsFree(pAppParms->apLinkParms[dwIdx]);
-            pAppParms->apLinkParms[dwIdx] = EC_NULL;
-        }
-    }
-
-    /* free app parameters */
-    SafeOsFree(pAppParms->NotifyParms.pbyInBuf);
-    SafeOsFree(pAppParms->NotifyParms.pbyOutBuf);
-    SafeOsFree(pAppParms->NotifyParms.pdwNumOutData);
+    FreeAppParms(&AppContext, pAppParms);
 
     return (EC_E_NOERROR == dwRetVal) ? 0 : -1;
 }

@@ -9,11 +9,11 @@
 #define INC_ECATNOTIFICATION 1
 
 /*-INCLUDES------------------------------------------------------------------*/
-#ifndef INC_ATETHERCAT
-#include "AtEthercat.h"
-#endif
 #ifndef INC_LOGGING
 #include "EcLogging.h"
+#endif
+#ifndef INC_ECINTERFACECOMMON
+#include "EcInterfaceCommon.h"
 #endif
 
 /*-DEFINES-------------------------------------------------------------------*/

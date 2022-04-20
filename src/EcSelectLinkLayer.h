@@ -24,6 +24,8 @@
 #endif
 
 /*-DEFINES-------------------------------------------------------------------*/
+#ifndef EXCLUDE_EMLL_ALL
+
 #if (defined EC_VERSION_CMSIS_RTOS)
  #define INCLUDE_EMLL_STATIC_LIBRARY
  #define INCLUDE_EMLLSTM32ETH
@@ -34,6 +36,7 @@
  #endif
 #elif (defined EC_VERSION_FREERTOS)
  #define INCLUDE_EMLL_SOC_XILINX
+ #define INCLUDE_EMLL_SOC_NXP
 #elif (defined EC_VERSION_INTEGRITY)
  #define INCLUDE_EMLL_STATIC_LIBRARY
  #define INCLUDE_EMLL_PCI_ALL
@@ -47,8 +50,17 @@
 #elif (defined EC_VERSION_LINUX)
  #define INCLUDE_EMLL_PCI_ALL
  #define INCLUDE_EMLL_SOC_ALL
+ #ifndef EXCLUDE_EMLLLAN743X
+ #define INCLUDE_EMLLLAN743X
+ #endif
+ #ifndef EXCLUDE_EMLLDW3504
+ #define INCLUDE_EMLLDW3504
+ #endif
  #ifndef EXCLUDE_EMLLALTERATSE
  #define INCLUDE_EMLLALTERATSE
+ #endif
+ #ifndef EXCLUDE_EMLLPROXY
+ #define INCLUDE_EMLLPROXY
  #endif
  #ifndef EXCLUDE_EMLLSIMULATOR
  #define INCLUDE_EMLLSIMULATOR
@@ -62,8 +74,8 @@
 #ifndef EXCLUDE_EMLLSIMULATOR
 #define INCLUDE_EMLLSIMULATOR
 #endif
-#elif (defined EC_VERSION_RIN32M3)
- #define INCLUDE_EMLLRIN32M3
+#elif (defined EC_VERSION_RIN32)
+ #define INCLUDE_EMLLRIN32
 #elif (defined EC_VERSION_RTEMS)
  #define INCLUDE_EMLL_STATIC_LIBRARY
  #define INCLUDE_EMLL_PCI_ALL
@@ -116,8 +128,14 @@
  #define INCLUDE_EMLLNDISUIO
 #elif (defined EC_VERSION_WINDOWS)
  #define INCLUDE_EMLL_PCI_ALL
+ #ifndef EXCLUDE_EMLLLAN743X
+ #define INCLUDE_EMLLLAN743X
+ #endif
  #ifndef EXCLUDE_EMLLNDIS
  #define INCLUDE_EMLLNDIS
+ #endif
+ #ifndef EXCLUDE_EMLLPROXY
+ #define INCLUDE_EMLLPROXY
  #endif
  #ifndef EXCLUDE_EMLLSIMULATOR
  #define INCLUDE_EMLLSIMULATOR
@@ -131,6 +149,9 @@
 #elif (defined EC_VERSION_XENOMAI)
  #define INCLUDE_EMLL_PCI_ALL
  #define INCLUDE_EMLL_SOC_ALL
+ #ifndef EXCLUDE_EMLLSOCKRAW
+ #define INCLUDE_EMLLSOCKRAW
+ #endif
 #elif (defined EC_VERSION_XILINX_STANDALONE)
  #define INCLUDE_EMLL_SOC_XILINX
 #endif
@@ -155,6 +176,11 @@
  #ifndef EXCLUDE_EMLLI8255X
  #define INCLUDE_EMLLI8255X
  #endif
+#endif
+#if (defined INCLUDE_EMLL_PCI_MICROCHIP)
+#ifndef EXCLUDE_EMLLLAN743X
+#define INCLUDE_EMLLLAN743X
+#endif
 #endif
 #if (defined INCLUDE_EMLL_PCI_REALTEK)
  #ifndef EXCLUDE_EMLLRTL8169
@@ -215,6 +241,11 @@
   #define INCLUDE_EMLLFSLFEC
   #endif
  #endif
+ #if (defined INCLUDE_EMLL_SOC_TI)
+  #ifndef EXCLUDE_EMLLICSSG
+  #define INCLUDE_EMLLICSSG
+  #endif
+ #endif
  #if (defined INCLUDE_EMLL_SOC_XILINX)
   #ifndef EXCLUDE_EMLLGEM
   #define INCLUDE_EMLLGEM
@@ -233,11 +264,15 @@
  #endif
 #endif
 
+#endif /* EXCLUDE_EMLL_ALL */
+
 /*-FUNCTION DECLARATION------------------------------------------------------*/
 EC_T_CHAR* GetNextWord(EC_T_CHAR **ppCmdLine, EC_T_CHAR *pStorage);
 
 EC_T_DWORD CreateLinkParmsFromCmdLine(EC_T_CHAR** ptcWord, EC_T_CHAR** lpCmdLine, EC_T_CHAR* tcStorage, EC_T_BOOL* pbGetNextWord,
                                       EC_T_LINK_PARMS** ppLinkParms, EC_T_LINK_TTS* pTtsParms);
+
+EC_T_VOID  FreeLinkParms(EC_T_LINK_PARMS* pLinkParms);
 
 EC_T_BOOL ParseIpAddress(EC_T_CHAR* ptcWord, EC_T_BYTE* pbyIpAddress);
 

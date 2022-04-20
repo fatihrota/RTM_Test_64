@@ -110,6 +110,10 @@ INT32 RtosComm::create_Data_SendMessageQueue(void)
 		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Failed to create message queue %s (0x%X)\n", MSGQUEUE_DATA_NAME_SEND, dwRetVal));
 		return -1;
 	}
+
+	InfoMsq_data_snd.dwSize = sizeof(InfoMsq_data_snd);
+
+	printf("Snd MSQ Queue Size : %d\n", dwTotalPdSizeIn);
 	return 0;
 }
 
@@ -131,6 +135,10 @@ INT32 RtosComm::create_Data_ReceiveMessageQueue(void)
 		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Failed to create message queue %s (0x%X)\n", MSGQUEUE_DATA_NAME_RCV, dwRetVal));
 		return -1;
 	}
+
+	InfoMsq_data_rcv.dwSize = sizeof(InfoMsq_data_rcv);
+
+	printf("Rcv MSQ Queue Size : %d\n", dwTotalPdSizeOut);
 	return 0;
 }
 

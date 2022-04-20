@@ -38,19 +38,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: RTM_Test
+all: RTM_Test_64
 
 # Tool invocations
-RTM_Test: $(OBJS) $(USER_OBJS)
+RTM_Test_64: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	i686-pc-linux-gnu-g++ -L"C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\LIB\Linux\x86" -L"C:\Program Files\acontis_technologies\LxWin\SDK\Lib\Linux\x86" -o "RTM_Test" $(OBJS) $(USER_OBJS) $(LIBS)
+	x86_64-pc-linux-gnu-g++ -L"C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\LIB\Linux\x64" -L"C:\Program Files\acontis_technologies\LxWin\SDK\Lib\Linux\x64" -o "RTM_Test_64" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(OBJS)$(C_UPPER_DEPS)$(CXX_DEPS)$(C_DEPS)$(CPP_DEPS) RTM_Test
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(OBJS)$(C_UPPER_DEPS)$(CXX_DEPS)$(C_DEPS)$(CPP_DEPS) RTM_Test_64
 	-@echo ' '
 
 .PHONY: all clean dependents

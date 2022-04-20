@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1487704002/PATH/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1487704002/PATH/operation=replace
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1487704002/PATH/value=C\:\\MinGw64\\bin;C\:/Users/fatih/OneDrive/Masa\u00FCst\u00FC/AcontisEval/eclipse/jre/bin/client;C\:/Users/fatih/OneDrive/Masa\u00FCst\u00FC/AcontisEval/eclipse/jre/bin;C\:/Users/fatih/OneDrive/Masa\u00FCst\u00FC/AcontisEval/eclipse/jre/lib/i386;C\:\\WINDOWS\\system32;C\:\\WINDOWS;C\:\\WINDOWS\\System32\\Wbem;C\:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C\:\\WINDOWS\\System32\\OpenSSH\\;C\:\\Program Files\\acontis_technologies\\RteRuntime\\;C\:\\Program Files\\Git\\cmd;C\:\\Program Files (x86)\\Bitvise SSH Client;C\:\\Users\\fatih\\AppData\\Local\\Microsoft\\WindowsApps;C\:\\Users\\fatih\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C\:\\Users\\fatih\\AppData\\Local\\GitHubDesktop\\bin;C\:\\Users\\fatih\\OneDrive\\Masa\u00FCst\u00FC\\AcontisEval\\eclipse;C\:\\MinGW\\msys\\1.0\\bin
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1487704002/append=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1487704002/appendContributed=true

@@ -56,7 +56,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	i686-pc-linux-gnu-g++ -I"C:\Program Files\acontis_technologies\LxWin\SDK\Examples\Inc\Linux" -I"C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC\Linux" -I"C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\Sources\Common" -I"C:\Program Files\acontis_technologies\EC-Master_ECWinRT-Linux\SDK\INC" -I"C:\Program Files\acontis_technologies\LxWin\SDK\Inc" -I"C:\Program Files\acontis_technologies\LxWin\SDK\Inc\Linux" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	x86_64-pc-linux-gnu-g++ -I"C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC\Linux" -I"C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\Examples\Linux\EcMasterDemo" -I"C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC" -I"C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC\Linux" -I"C:\Program Files\acontis_technologies\LxWin\SDK\Examples\Inc\Linux" -I"C:\Program Files\acontis_technologies\LxWin\SDK\Inc" -I"C:\Program Files\acontis_technologies\LxWin\SDK\Inc\Linux" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

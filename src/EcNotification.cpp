@@ -9,12 +9,7 @@
 #define pEcLogParms GetLogParms()
 
 /*-INCLUDES------------------------------------------------------------------*/
-#include "EcNotification.h"
-#include "EcSlaveInfo.h"
-
-#ifndef EXCLUDE_RAS
-#include "AtEmRasError.h"
-#endif
+#include "EcDemoApp.h"
 
 /*-DEFINES-------------------------------------------------------------------*/
 #define MAX_MSG_PER_ERROR   1 /* max. number of error messages printed */
@@ -24,8 +19,8 @@
 /*-CLASS FUNCTIONS-----------------------------------------------------------*/
 /*****************************************************************************/
 /**
-\brief  Constructor.
-*/
+ * \brief  Constructor.
+ */
 CEmNotification::CEmNotification(
     EC_T_DWORD      dwMasterInstance,   /**< [in]   Master Instance */
     EC_T_BOOL       bRasClient          /**< [in]   Remote API client */
@@ -54,14 +49,15 @@ CEmNotification::CEmNotification(
 }
 
 /*****************************************************************************/
-/** \brief  EtherCAT notification
-*
-* This function is called on EtherCAT events.
-* No EtherCAT functions may be called here (unless explicitly allowed in the documentation)!!
-* It should be left as fast as possible.
-*
-* \return Currently always EC_E_NOERROR has to be returned.
-*/
+/**
+ * \brief  EtherCAT notification
+ *
+ * This function is called on EtherCAT events.
+ * No EtherCAT functions may be called here (unless explicitly allowed in the documentation)!!
+ * It should be left as fast as possible.
+ *
+ * \return Currently always EC_E_NOERROR has to be returned.
+ */
 EC_T_DWORD CEmNotification::ecatNotify(
     EC_T_DWORD          dwCode,         /**< [in]   Notification code */
     EC_T_NOTIFYPARMS*   pParms          /**< [in]   Notification data */
@@ -604,7 +600,7 @@ EC_T_DWORD CEmNotification::ecatNotify(
                 case eRspErr_WRONG_IDX:     pszTextCause = ecatGetText(EC_TXT_FRAME_RESPONSE_ERRTYPE_WRONG);       break;
                 case eRspErr_UNEXPECTED:    pszTextCause = ecatGetText(EC_TXT_FRAME_RESPONSE_ERRTYPE_UNEXPECTED);  break;
                 case eRspErr_RETRY_FAIL:    pszTextCause = ecatGetText(EC_TXT_FRAME_RESPONSE_ERRTYPE_RETRY_FAIL);  break;
-                default:                    pszTextCause = (EC_T_CHAR*)"@@internal error@@";  break;
+                default:                    pszTextCause = "@@internal error@@";  break;
                 }
                 EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, ecatGetText(EC_TXT_FRMRESP_NORETRY), pszTextCause, (pErrorNotificationDesc->desc.FrameRspErrDesc.bIsCyclicFrame ? ecatGetText(EC_TXT_FRAME_TYPE_CYCLIC) : ecatGetText(EC_TXT_FRAME_TYPE_ACYCLIC))));
             }
@@ -653,7 +649,7 @@ EC_T_DWORD CEmNotification::ecatNotify(
                 } break;
             case eInitCmdErr_FAILED:
                 {
-                EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, ecatGetText(EC_TXT_SLVINITCMDRSPERR_FLD), pSlaveProp->achName, pSlaveProp->wStationAddress, 
+                EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, ecatGetText(EC_TXT_SLVINITCMDRSPERR_FLD), pSlaveProp->achName, pSlaveProp->wStationAddress,
                     pErrorNotificationDesc->desc.InitCmdErrDesc.achStateChangeName));
                 } break;
             case eInitCmdErr_NOT_PRESENT:
@@ -979,25 +975,25 @@ EC_T_DWORD CEmNotification::ecatNotify(
 
 /*****************************************************************************/
 /**
-\brief  Process Notification Jobs.
-
-This function processes the results enqueued by EcatNotify in an asynchronuous Matter
-\return EC_FALSE on error, EC_TRUE otherwise.
-*/
+ * \brief  Process Notification Jobs.
+ *
+ * This function processes the results enqueued by EcatNotify in an asynchronuous Matter
+ * \return EC_FALSE on error, EC_TRUE otherwise.
+ */
 EC_T_BOOL CEmNotification::ProcessNotificationJobs(EC_T_VOID)
 {
-    T_SLAVEJOBS TmpJob     = {0};
+    T_SLAVEJOBS oTmpJob;
     EC_T_BOOL   bProcessed = EC_FALSE;
 
     /* process all jobs */
-    while (DequeueJob(&TmpJob))
+    while (DequeueJob(&oTmpJob))
     {
-        switch (TmpJob.dwCode)
+        switch (oTmpJob.dwCode)
         {
         case EC_NOTIFY_SB_MISMATCH:
         case EC_NOTIFY_SB_DUPLICATE_HC_NODE:
             {
-                EC_T_SB_MISMATCH_DESC*  pScanBusMismatchJob = &TmpJob.JobData.SBSlaveMismatchJob;
+                EC_T_SB_MISMATCH_DESC*  pScanBusMismatchJob = &oTmpJob.JobData.SBSlaveMismatchJob;
                 EC_T_DWORD              dwRes               = 0;
 
                 /* Check if we have a mismatch for the first slave on the bus */
@@ -1029,7 +1025,7 @@ EC_T_BOOL CEmNotification::ProcessNotificationJobs(EC_T_VOID)
                     }
                     if (0 != pScanBusMismatchJob->dwBusProdCode)
                     {
-                        EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Found Slave...: %s (0x%x), %s (0x%x)\n",                            
+                        EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Found Slave...: %s (0x%x), %s (0x%x)\n",
                             SlaveProdCodeText((T_eEtherCAT_Vendor)pScanBusMismatchJob->dwBusVendorId, (T_eEtherCAT_ProductCode)pScanBusMismatchJob->dwBusProdCode),
                             pScanBusMismatchJob->dwBusProdCode,
                             SlaveVendorText((T_eEtherCAT_Vendor)pScanBusMismatchJob->dwBusVendorId),
@@ -1042,7 +1038,7 @@ EC_T_BOOL CEmNotification::ProcessNotificationJobs(EC_T_VOID)
                 }
                 else
                 {
-                    if (EC_NOTIFY_SB_DUPLICATE_HC_NODE == TmpJob.dwCode)
+                    if (EC_NOTIFY_SB_DUPLICATE_HC_NODE == oTmpJob.dwCode)
                     {
                         EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR,
                             "Identification value of slave %s (Auto inc. address: 0x%x) is duplicated: %d",
@@ -1079,7 +1075,7 @@ EC_T_BOOL CEmNotification::ProcessNotificationJobs(EC_T_VOID)
 #ifdef INCLUDE_FOE_SUPPORT
         case eMbxTferType_FOE_SEG_DOWNLOAD:
             {
-                EC_T_MBXTFER* pMbxTfer = &(TmpJob.JobData.MbxTferJob);
+                EC_T_MBXTFER* pMbxTfer = &(oTmpJob.JobData.MbxTferJob);
                 if (eMbxTferStatus_TferWaitingForContinue == pMbxTfer->eTferStatus)
                 {
                     /* read from file to application's buffer */
@@ -1105,13 +1101,13 @@ EC_T_BOOL CEmNotification::ProcessNotificationJobs(EC_T_VOID)
     return bProcessed;
 }
 
-#ifndef EXCLUDE_RAS
+#if (defined INCLUDE_RAS_SERVER) || (defined ATEMRAS_CLIENT)
 /*****************************************************************************/
 /**
-\brief  AtEmRas Layer Notification function callback.
-
-\return EC_E_NOERROR on success, error code otherwise.
-*/
+ * \brief  AtEmRas Layer Notification function callback.
+ *
+ * \return EC_E_NOERROR on success, error code otherwise.
+ */
 EC_T_DWORD CEmNotification::emRasNotify(
     EC_T_DWORD          dwCode,     /**< [in]   Notification code identifier */
     EC_T_NOTIFYPARMS*   pParms      /**< [in]   Notification data portion */
@@ -1234,13 +1230,14 @@ EC_T_DWORD CEmNotification::emRasNotify(
 Exit:
     return dwRetVal;
 }
-#endif /* !EXCLUDE_RAS */
+#endif /* INCLUDE_RAS_SERVER || ATEMRAS_CLIENT */
 
 /*****************************************************************************/
-/** \brief  C Wrapper function to ecatNotify
-*
-* \return  Status value.
-*/
+/**
+ * \brief  C Wrapper function to ecatNotify
+ *
+ * \return  Status value.
+ */
 EC_T_DWORD CEmNotification::NotifyWrapper(
     EC_T_DWORD         dwCode,  /**< [in]   Notifcation code */
     EC_T_NOTIFYPARMS*  pParms   /**< [in]   Notification parameters */
@@ -1264,8 +1261,8 @@ Exit:
 
 /*****************************************************************************/
 /**
-\brief  Reset Error counters.
-*/
+ * \brief  Reset Error counters.
+ */
 EC_T_VOID CEmNotification::ResetErrorCounters(EC_T_VOID)
 {
     OsMemset(m_adwErrorCounter, 0, sizeof(m_adwErrorCounter));
@@ -1273,10 +1270,10 @@ EC_T_VOID CEmNotification::ResetErrorCounters(EC_T_VOID)
 
 /*****************************************************************************/
 /**
-\brief  Increment Pointer in Queue.
-
-\return New Pointer.
-*/
+ * \brief  Increment Pointer in Queue.
+ *
+ * \return New Pointer.
+ */
 PT_SLAVEJOBS CEmNotification::IncrementJobPtr(PT_SLAVEJOBS pPtr)
 {
     PT_SLAVEJOBS pRet = EC_NULL;
@@ -1301,11 +1298,11 @@ Exit:
 
 /*****************************************************************************/
 /**
-\brief  EnqueueJob.
-
-Enqueue new Job to queue.
-\return EC_TRUE on success, EC_FALSE otherwise.
-*/
+ * \brief  EnqueueJob.
+ *
+ * Enqueue new Job to queue.
+ * \return EC_TRUE on success, EC_FALSE otherwise.
+ */
 EC_T_BOOL CEmNotification::EnqueueJob(
     PT_SLAVEJOBS pJob,
     EC_T_DWORD dwCode,
@@ -1344,11 +1341,11 @@ Exit:
 
 /*****************************************************************************/
 /**
-\brief  DequeueJob.
-
-Dequeue next job if possible.
-\return EC_TRUE on success, EC_FALSE otherwise.
-*/
+ * \brief  DequeueJob.
+ *
+ * Dequeue next job if possible.
+ * \return EC_TRUE on success, EC_FALSE otherwise.
+ */
 EC_T_BOOL CEmNotification::DequeueJob(
     PT_SLAVEJOBS    pJob    /**< [out]  Dequeued Job Object */
                                      )
