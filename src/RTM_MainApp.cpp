@@ -246,26 +246,43 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 	/* get current time */
 	clock_gettime(CLOCK_MONOTONIC, &t);
 
-	RtosMsgQueueInfoGet(rtmComm->hQueue_data_rcv, &rtmComm->InfoMsq_data_rcv);
+	RtosMsgQueueInfoGet(rtmComm->hQueue_data_rcv[rtmComm->msqIndex], &rtmComm->InfoMsq_data_rcv[rtmComm->msqIndex]);
 
 	//printf("Pending : %d\n", Info_fromNRTM.dwNumPending);
-	if (rtmComm->InfoMsq_data_rcv.dwNumPending > 0)
+	if (rtmComm->InfoMsq_data_rcv[rtmComm->msqIndex].dwNumPending > 1)
 	{
-		dwRetVal = RtosMsgQueueRead(rtmComm->hQueue_data_rcv, (UINT8*)&rcvSignalFromNRTM[0], MAX_ETHERCAT_MSG_SIZE, &dwNumData, 0);
+		dwRetVal = RtosMsgQueueRead(rtmComm->hQueue_data_rcv[rtmComm->msqIndex], (UINT8*)&rcvSignalFromNRTM[0], MAX_ETHERCAT_MSG_SIZE, &dwNumData, 0);
 		if (dwRetVal != RTE_SUCCESS)
 		{
 			printf("RQ : %d\n", dwRetVal);
 
 		}
 		started = 1;
-		//printf("Take Data From Msq Queue : %d - %d - %d \n", rcvSignalFromNRTM[0], rcvSignalFromNRTM[1], rcvSignalFromNRTM[2]);
+		//printf("Take: %d - %d \n",rtmComm->InfoMsq_data_rcv[rtmComm->msqIndex].dwNumPending, rtmComm->msqIndex);
+	}
+	else if (rtmComm->InfoMsq_data_rcv[rtmComm->msqIndex].dwNumPending == 1 && started)
+	{
+		dwRetVal = RtosMsgQueueRead(rtmComm->hQueue_data_rcv[rtmComm->msqIndex], (UINT8*)&rcvSignalFromNRTM[0], MAX_ETHERCAT_MSG_SIZE, &dwNumData, 0);
+		if (dwRetVal != RTE_SUCCESS)
+		{
+			printf("RQ : %d\n", dwRetVal);
+
+		}
+		rtmComm->msqIndex = !rtmComm->msqIndex;
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "SW - %d\n", rtmComm->msqIndex));
+
 	}
 	else
 	{
 		if (started)
 		{
-			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "E\n"));
+			//rtmComm->msqIndex = !rtmComm->msqIndex;
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "E - %d\n", rtmComm->msqIndex));
 			started = 0;
+		}
+		else
+		{
+			rtmComm->msqIndex = !rtmComm->msqIndex;
 		}
 	}
 

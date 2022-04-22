@@ -104,14 +104,14 @@ INT32 RtosComm::create_Data_SendMessageQueue(void)
 	MsgQueueOptions.dwNumMessages = DATA_SEND_MSQ_SIZE;
 	MsgQueueOptions.dwMsgDataSizeInBytes = MAX_ETHERCAT_MSG_SIZE;
 	MsgQueueOptions.bReadAccess = FALSE;
-	dwRetVal = RtosMsgQueueCreate(MSGQUEUE_DATA_NAME_SEND, &MsgQueueOptions, &hQueue_data_snd);
+	dwRetVal = RtosMsgQueueCreate(MSGQUEUE_DATA_NAME_SEND, &MsgQueueOptions, &hQueue_data_snd[0]);
 	if (RTE_SUCCESS != dwRetVal)
 	{
 		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Failed to create message queue %s (0x%X)\n", MSGQUEUE_DATA_NAME_SEND, dwRetVal));
 		return -1;
 	}
 
-	InfoMsq_data_snd.dwSize = sizeof(InfoMsq_data_snd);
+	InfoMsq_data_snd[0].dwSize = sizeof(InfoMsq_data_snd[0]);
 
 	printf("Snd MSQ Queue Size : %d\n", dwTotalPdSizeIn);
 	return 0;
@@ -129,14 +129,31 @@ INT32 RtosComm::create_Data_ReceiveMessageQueue(void)
 	MsgQueueOptions.dwNumMessages = DATA_RCV_MSQ_SIZE;
 	MsgQueueOptions.dwMsgDataSizeInBytes = MAX_ETHERCAT_MSG_SIZE;
 	MsgQueueOptions.bReadAccess = TRUE;
-	dwRetVal = RtosMsgQueueCreate(MSGQUEUE_DATA_NAME_RCV, &MsgQueueOptions, &hQueue_data_rcv);
+	dwRetVal = RtosMsgQueueCreate(MSGQUEUE_DATA_NAME_RCV, &MsgQueueOptions, &hQueue_data_rcv[0]);
 	if (RTE_SUCCESS != dwRetVal)
 	{
 		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Failed to create message queue %s (0x%X)\n", MSGQUEUE_DATA_NAME_RCV, dwRetVal));
 		return -1;
 	}
 
-	InfoMsq_data_rcv.dwSize = sizeof(InfoMsq_data_rcv);
+	InfoMsq_data_rcv[0].dwSize = sizeof(InfoMsq_data_rcv[0]);
+
+
+	RTOSMSGQUEUE_OPTIONS    MsgQueueOptions2;
+	/* Create message queue from RTM to NRTM to receive EtherCAT msg*/
+	MsgQueueOptions2.dwSize = sizeof(MsgQueueOptions2);
+	MsgQueueOptions2.dwFlags = RTOSMSGQUEUE_OPTIONS_FLAG_ALLOWBROKEN;
+	MsgQueueOptions2.dwNumMessages = DATA_RCV_MSQ_SIZE;
+	MsgQueueOptions2.dwMsgDataSizeInBytes = MAX_ETHERCAT_MSG_SIZE;
+	MsgQueueOptions2.bReadAccess = TRUE;
+	dwRetVal = RtosMsgQueueCreate(MSGQUEUE_DATA_NAME_RCV_2, &MsgQueueOptions, &hQueue_data_rcv[1]);
+	if (RTE_SUCCESS != dwRetVal)
+	{
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Failed to create message queue %s (0x%X)\n", MSGQUEUE_DATA_NAME_RCV_2, dwRetVal));
+		return -1;
+	}
+
+	InfoMsq_data_rcv[1].dwSize = sizeof(InfoMsq_data_rcv[1]);
 
 	printf("Rcv MSQ Queue Size : %d\n", dwTotalPdSizeOut);
 	return 0;

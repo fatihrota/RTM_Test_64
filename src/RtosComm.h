@@ -37,15 +37,16 @@
 
 #define MSGQUEUE_DATA_NAME_SEND			TEXT("MsgQueueFromRTMtoNRTM")
 #define MSGQUEUE_DATA_NAME_RCV			TEXT("MsgQueueFromNRTMtoRTM")
+#define MSGQUEUE_DATA_NAME_RCV_2			TEXT("MsgQueueFromNRTMtoRTM_2")
 
-#define DATA_SEND_MSQ_SIZE			250
-#define DATA_RCV_MSQ_SIZE			250
+#define DATA_SEND_MSQ_SIZE			10000
+#define DATA_RCV_MSQ_SIZE			10000
 
 #define SERVER_OSID                 0 /* OS 0 = Rtos */
 #define SERVER_PORT                 7
 #define RTOS_MSG_SIZE				8
 
-#define MAX_ETHERCAT_MSG_SIZE 10000
+#define MAX_ETHERCAT_MSG_SIZE 1000
 
 /*============================================================================*/
 /* Type definitions                                                           */
@@ -108,11 +109,13 @@ public:
 	EC_T_INT dwTotalPdSizeIn = 0;
 	EC_T_INT dwTotalPdSizeOut = 0;
 
-	RTOSLIB_HANDLE          hQueue_data_snd = NULL;	/* RTOS Message Queue handler for outgoing messages */
-	RTOSLIB_HANDLE          hQueue_data_rcv = NULL; /* RTOS Message Queue handler for incoming messages */
+	RTOSLIB_HANDLE          hQueue_data_snd[2] = {0};	/* RTOS Message Queue handler for outgoing messages */
+	RTOSLIB_HANDLE          hQueue_data_rcv[2] = {0}; /* RTOS Message Queue handler for incoming messages */
 
-	RTOSMSGQUEUE_INFO       InfoMsq_data_snd;	/* RTOS Message Queue information for outgoing messages */
-	RTOSMSGQUEUE_INFO       InfoMsq_data_rcv; /* RTOS Message Queue information for incoming messages */
+	RTOSMSGQUEUE_INFO       InfoMsq_data_snd[2];	/* RTOS Message Queue information for outgoing messages */
+	RTOSMSGQUEUE_INFO       InfoMsq_data_rcv[2]; /* RTOS Message Queue information for incoming messages */
+
+	int msqIndex = 0;
 
 private:
 	RtosComm();
