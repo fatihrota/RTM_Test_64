@@ -71,6 +71,10 @@ public:
 	EC_T_BYTE sndSignalToNRTM[MAX_ETHERCAT_MSG_SIZE];
 
 	std::vector<RTM_TestRun> testVector;	/* Holds seperate tests */
+
+	EC_T_VOID*	readMsqEvent;
+	EC_T_VOID*	okMsqEvent;
+
 private:
 	RTM_MainApp();
 	static RTM_MainApp* instance;

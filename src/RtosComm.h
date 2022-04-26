@@ -38,14 +38,14 @@
 #define MSGQUEUE_DATA_NAME_SEND			TEXT("MsgQueueFromRTMtoNRTM")
 #define MSGQUEUE_DATA_NAME_RCV			TEXT("MsgQueueFromNRTMtoRTM")
 
-#define DATA_SEND_MSQ_SIZE			250
-#define DATA_RCV_MSQ_SIZE			250
+#define DATA_SEND_MSQ_SIZE			5000
+#define DATA_RCV_MSQ_SIZE			5000
 
 #define SERVER_OSID                 0 /* OS 0 = Rtos */
 #define SERVER_PORT                 7
 #define RTOS_MSG_SIZE				8
 
-#define MAX_ETHERCAT_MSG_SIZE 10000
+#define MAX_ETHERCAT_MSG_SIZE 1000
 
 /*============================================================================*/
 /* Type definitions                                                           */

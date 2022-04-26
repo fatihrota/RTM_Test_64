@@ -359,16 +359,16 @@ EC_T_DWORD EcDemoApp(T_EC_DEMO_APP_CONTEXT* pAppContext)
 				oDcConfigure.bAcycDistributionDisabled = EC_TRUE;
 			}
 #else
-	oDcConfigure.bAcycDistributionDisabled = EC_TRUE;
+			oDcConfigure.bAcycDistributionDisabled = EC_TRUE;
 #endif
 
-	dwRes = ecatDcConfigure(&oDcConfigure);
-	if (dwRes != EC_E_NOERROR )
-	{
-		dwRetVal = dwRes;
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Cannot configure DC! (Result = 0x%x)\n", dwRes));
-		goto Exit;
-	}
+			dwRes = ecatDcConfigure(&oDcConfigure);
+			if (dwRes != EC_E_NOERROR )
+			{
+				dwRetVal = dwRes;
+				EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Cannot configure DC! (Result = 0x%x)\n", dwRes));
+				goto Exit;
+			}
 		}
 		/* configure DCM */
 		if (pAppParms->bDcmLogEnabled && !pAppParms->bDcmConfigure)
@@ -920,57 +920,57 @@ static EC_T_VOID EcMasterJobTask(EC_T_VOID* pvAppContext)
 		}
 #endif
 
-if (pAppParms->bPerfMeasEnabled)
-{
-	ecatPerfMeasAppStart(pAppContext->pvPerfMeas, PERF_myAppWorkpd);
-}
-{
-	EC_T_STATE eMasterState = ecatGetMasterState();
+		if (pAppParms->bPerfMeasEnabled)
+		{
+			ecatPerfMeasAppStart(pAppContext->pvPerfMeas, PERF_myAppWorkpd);
+		}
+		{
+			EC_T_STATE eMasterState = ecatGetMasterState();
 
-	if ((eEcatState_SAFEOP == eMasterState) || (eEcatState_OP == eMasterState))
-	{
-		myAppWorkpd(pAppContext);
-	}
-}
-if (pAppParms->bPerfMeasEnabled)
-{
-	ecatPerfMeasAppEnd(pAppContext->pvPerfMeas, PERF_myAppWorkpd);
-}
+			if ((eEcatState_SAFEOP == eMasterState) || (eEcatState_OP == eMasterState))
+			{
+				myAppWorkpd(pAppContext);
+			}
+		}
+		if (pAppParms->bPerfMeasEnabled)
+		{
+			ecatPerfMeasAppEnd(pAppContext->pvPerfMeas, PERF_myAppWorkpd);
+		}
 
-/* write output values of current cycle, by sending all cyclic frames */
-dwRes = ecatExecJob(eUsrJob_SendAllCycFrames, &oJobParms);
-if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes && EC_E_LINK_DISCONNECTED != dwRes)
-{
-	EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ecatExecJob( eUsrJob_SendAllCycFrames,    EC_NULL ): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
-}
+		/* write output values of current cycle, by sending all cyclic frames */
+		dwRes = ecatExecJob(eUsrJob_SendAllCycFrames, &oJobParms);
+		if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes && EC_E_LINK_DISCONNECTED != dwRes)
+		{
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ecatExecJob( eUsrJob_SendAllCycFrames,    EC_NULL ): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
+		}
 
-/* remove this code when using licensed version */
-if (EC_E_EVAL_EXPIRED == dwRes)
-{
-	bRun = EC_FALSE;
-}
+		/* remove this code when using licensed version */
+		if (EC_E_EVAL_EXPIRED == dwRes)
+		{
+			bRun = EC_FALSE;
+		}
 
-/* execute some administrative jobs. No bus traffic is performed by this function */
-dwRes = ecatExecJob(eUsrJob_MasterTimer, EC_NULL);
-if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes)
-{
-	EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ecatExecJob(eUsrJob_MasterTimer, EC_NULL): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
-}
+		/* execute some administrative jobs. No bus traffic is performed by this function */
+		dwRes = ecatExecJob(eUsrJob_MasterTimer, EC_NULL);
+		if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes)
+		{
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ecatExecJob(eUsrJob_MasterTimer, EC_NULL): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
+		}
 
-/* send queued acyclic EtherCAT frames */
-dwRes = ecatExecJob(eUsrJob_SendAcycFrames, EC_NULL);
-if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes && EC_E_LINK_DISCONNECTED != dwRes)
-{
-	EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ecatExecJob(eUsrJob_SendAcycFrames, EC_NULL): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
-}
+		/* send queued acyclic EtherCAT frames */
+		dwRes = ecatExecJob(eUsrJob_SendAcycFrames, EC_NULL);
+		if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes && EC_E_LINK_DISCONNECTED != dwRes)
+		{
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ecatExecJob(eUsrJob_SendAcycFrames, EC_NULL): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
+		}
 
-/* stop Task (required for enhanced performance measurement) */
-oTaskJobParms.StopTask.dwTaskId = 0;
-dwRes = ecatExecJob(eUsrJob_StopTask, &oTaskJobParms);
-if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes && EC_E_LINK_DISCONNECTED != dwRes)
-{
-	EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ERROR: ecatExecJob(eUsrJob_StopTask): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
-}
+		/* stop Task (required for enhanced performance measurement) */
+		oTaskJobParms.StopTask.dwTaskId = 0;
+		dwRes = ecatExecJob(eUsrJob_StopTask, &oTaskJobParms);
+		if (EC_E_NOERROR != dwRes && EC_E_INVALIDSTATE != dwRes && EC_E_LINK_DISCONNECTED != dwRes)
+		{
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "ERROR: ecatExecJob(eUsrJob_StopTask): %s (0x%lx)\n", ecatGetText(dwRes), dwRes));
+		}
 #if !(defined NO_OS)
 	} while (!pAppContext->bJobTaskShutdown);
 
@@ -1182,14 +1182,18 @@ static EC_T_DWORD myAppWorkpd(T_EC_DEMO_APP_CONTEXT* pAppContext)
 	clock_gettime(CLOCK_MONOTONIC, &t);
 
 	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
+
 	//mainApp->copyRcvdEthercatMsgToBuffer(pbyPdIn);
 	EC_COPYBITS(mainApp->receivedEtherCatArray, 0, pbyPdIn, 0, rtmComm->dwTotalPdSizeIn);
 	mainApp->copyRcvdEthercatMsgToBuffer(pbyPdIn);
-	mainApp->takeDataFromMsgQueue();
+	OsWaitForEvent(mainApp->okMsqEvent, EC_WAITINFINITE);
+	//mainApp->takeDataFromMsgQueue();
 
 	//mainApp->triggerTests();
 	//mainApp->copySendBufferToEthercat(pbyPdOut);
 	EC_COPYBITS(pbyPdOut, 0, mainApp->sendEtherCatArray, 0, rtmComm->dwTotalPdSizeOut);
+
+	OsSetEvent(mainApp->readMsqEvent);
 
 	struct timespec t2;
 	OsMemset(&t2, 0, sizeof(struct timespec));

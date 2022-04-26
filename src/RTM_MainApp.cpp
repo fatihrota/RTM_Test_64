@@ -176,7 +176,7 @@ EC_T_VOID mainRun(EC_T_VOID* pvAppContext)
 	RtosComm *rtmComm = RtosComm::getInstance();
 
 	rtmComm->libInit();
-	RtosTimeSyncStart();
+	//RtosTimeSyncStart();
 	//rtmComm->create_Data_ReceiveMessageQueue();
 	//rtmComm->create_Data_SendMessageQueue();
 	/*rtmComm->createSocket();
@@ -200,7 +200,6 @@ EC_T_VOID mainRun(EC_T_VOID* pvAppContext)
 
 /******************************************************************************/
 uint8_t tmpRcvd = 0;
-int counterX = 0;
 EC_T_VOID RTM_MainApp::copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg)
 {
 	RtosComm *rtmComm = RtosComm::getInstance();
@@ -213,27 +212,19 @@ EC_T_VOID RTM_MainApp::copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg)
 	{
 		if (val != 0)
 		{
-			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "X : %d - %d - %d\n", tmpRcvd,receivedEtherCatArray[0],ecatMsg));
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "X : %d - %d - %d\n", tmpRcvd,receivedEtherCatArray[0]));
 		}
 	}
 	else if(tmpRcvd != (val-1))
 	{
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "E : %d - %d - %d\n",tmpRcvd,receivedEtherCatArray[0],(int)(*(int *)ecatMsg)));
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "E : %d - %d - %d\n",tmpRcvd,receivedEtherCatArray[0]));
 	}
 	tmpRcvd = val;
-
-	/*if (counterX % 64 == 0)
-	{
-		printf("[0] : %d\n", receivedEtherCatArray[0]);
-	}*/
-
-	counterX++;
-
-
 }
 
 /******************************************************************************/
 uint8_t started  = 0;
+uint8_t tmpTake = 0;
 EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 {
 	RtosComm *rtmComm = RtosComm::getInstance();
@@ -258,13 +249,26 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 
 		}
 		started = 1;
-		//printf("Take Data From Msq Queue : %d - %d - %d \n", rcvSignalFromNRTM[0], rcvSignalFromNRTM[1], rcvSignalFromNRTM[2]);
+		uint8_t val = rcvSignalFromNRTM[0];
+		if(tmpTake == 255)
+		{
+			if (val != 0)
+			{
+				EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "DX : %d - %d\n", tmpTake,val));
+			}
+		}
+		else if(tmpTake != (val-1))
+		{
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "DE : %d - %d\n",tmpTake,val));
+		}
+		tmpTake = val;
+		//printf("D: %d\n", rcvSignalFromNRTM[0]);
 	}
 	else
 	{
 		if (started)
 		{
-			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "E\n"));
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "STOP\n"));
 			started = 0;
 		}
 	}
@@ -339,6 +343,25 @@ EC_T_VOID shutdownApp(EC_T_VOID)
 
 }
 
+void takeDataFromMsq(EC_T_VOID* pvAppContext)
+{
+	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
+
+	mainApp->readMsqEvent = OsCreateEvent();
+	mainApp->okMsqEvent = OsCreateEvent();
+
+	mainApp->takeDataFromMsgQueue();
+	OsSetEvent(mainApp->okMsqEvent);
+
+	while(1)
+	{
+		OsWaitForEvent(mainApp->readMsqEvent, EC_WAITINFINITE);
+		mainApp->takeDataFromMsgQueue();
+		OsSetEvent(mainApp->okMsqEvent);
+	}
+
+}
+
 extern int ECMaster_main(int nArgc, char* ppArgv[]);
 extern volatile EC_T_BOOL  bRun;
 /******************************************************************************/
@@ -346,13 +369,21 @@ int main(int nArgc, char* ppArgv[])
 {
 	RTM_MainApp *mainApp = RTM_MainApp::getInstance();
 	EC_T_VOID* pvJobTaskHandle   = EC_NULL;
+	EC_T_VOID* pvJobTaskHandleMsq   = EC_NULL;
 
 	pvJobTaskHandle = OsCreateThread((EC_T_CHAR*)"RTM_MainApp",
 					mainRun,
 					0,
-					RTM_THREAD_PRIO,
+					MAIN_THREAD_PRIO,
 					JOBS_THREAD_STACKSIZE,
 					NULL);
+
+	pvJobTaskHandleMsq = OsCreateThread((EC_T_CHAR*)"RTM_TakeData",
+						takeDataFromMsq,
+						0,
+						RTM_THREAD_PRIO,
+						JOBS_THREAD_STACKSIZE,
+						NULL);
 
 
 	ECMaster_main(nArgc, ppArgv);
