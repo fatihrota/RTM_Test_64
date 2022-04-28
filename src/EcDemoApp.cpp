@@ -1186,14 +1186,14 @@ static EC_T_DWORD myAppWorkpd(T_EC_DEMO_APP_CONTEXT* pAppContext)
 	//mainApp->copyRcvdEthercatMsgToBuffer(pbyPdIn);
 	EC_COPYBITS(mainApp->receivedEtherCatArray, 0, pbyPdIn, 0, rtmComm->dwTotalPdSizeIn);
 	mainApp->copyRcvdEthercatMsgToBuffer(pbyPdIn);
-	OsWaitForEvent(mainApp->okMsqEvent, EC_WAITINFINITE);
-	//mainApp->takeDataFromMsgQueue();
+	//OsWaitForEvent(mainApp->okMsqEvent, EC_WAITINFINITE);
+	mainApp->takeDataFromMsgQueue();
 
 	//mainApp->triggerTests();
 	//mainApp->copySendBufferToEthercat(pbyPdOut);
 	EC_COPYBITS(pbyPdOut, 0, mainApp->sendEtherCatArray, 0, rtmComm->dwTotalPdSizeOut);
 
-	OsSetEvent(mainApp->readMsqEvent);
+	//OsSetEvent(mainApp->readMsqEvent);
 
 	struct timespec t2;
 	OsMemset(&t2, 0, sizeof(struct timespec));

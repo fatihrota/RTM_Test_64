@@ -24,7 +24,7 @@ src/RtosComm.o: ../src/RtosComm.cpp ../src/RtosComm.h \
  C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasError.h \
  C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasType.h \
  C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasSrvVersion.h \
- ../src/RtosMessage.h \
+ ../src/RtosShmLinkedList.h ../src/RtosMessage.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rtosLib.h
 
 ../src/RtosComm.h:
@@ -90,6 +90,8 @@ C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SD
 C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasType.h:
 
 C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasSrvVersion.h:
+
+../src/RtosShmLinkedList.h:
 
 ../src/RtosMessage.h:
 

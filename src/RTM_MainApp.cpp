@@ -169,6 +169,7 @@ EC_T_VOID RTM_MainApp::createTestThreads(EC_T_VOID* pvAppContext)
 }
 
 /******************************************************************************/
+
 EC_T_VOID mainRun(EC_T_VOID* pvAppContext)
 {
 	T_EC_DEMO_APP_CONTEXT *demoAppTmp = static_cast<T_EC_DEMO_APP_CONTEXT *>(pvAppContext);
@@ -176,6 +177,26 @@ EC_T_VOID mainRun(EC_T_VOID* pvAppContext)
 	RtosComm *rtmComm = RtosComm::getInstance();
 
 	rtmComm->libInit();
+
+	rtmComm->createLinkedList();
+#if 0
+	list_in_shm_handle_t h = {0,};
+	list_in_shm_init(&h, sizeof(data_t), 10, 0);
+
+	data_t * temp= NULL ;
+	for(int i=0;i<10;i++)
+	{
+		temp=(data_t *)get_node_from_shm(&h,FROM_LIST | FROM_FRONT);
+		if(NULL != temp)
+		{
+			printf("\n %d %d",i,temp->data[0]);
+		}
+		printf("Free List C : %d - %d ", h.pFreeListStruct->c, h.pFreeListStruct->mc);
+		printf("List C : %d - %d ", h.pList->c, h.pList->mc);
+	}
+#endif
+
+	//shmTest();
 	//RtosTimeSyncStart();
 	//rtmComm->create_Data_ReceiveMessageQueue();
 	//rtmComm->create_Data_SendMessageQueue();
@@ -223,6 +244,12 @@ EC_T_VOID RTM_MainApp::copyRcvdEthercatMsgToBuffer(EC_T_BYTE* ecatMsg)
 }
 
 /******************************************************************************/
+
+#define  OWNER_FREE         0
+#define  OWNER_RTOS         1
+#define  OWNER_WINDOWS      2
+#define  OWNER_INVALID      9
+
 uint8_t started  = 0;
 uint8_t tmpTake = 0;
 EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
@@ -230,6 +257,8 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 	RtosComm *rtmComm = RtosComm::getInstance();
 	UINT32                  dwNumData;
 	UINT32 dwRetVal = RTE_SUCCESS;
+	UINT32  dwOwner;
+	UINT32  dwInitVal;
 	//memset((UINT8*)&rcvSignalFromNRTM[0], 0, rtmComm->dwTotalPdSizeOut);
 
 	struct timespec t;
@@ -237,19 +266,59 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 	/* get current time */
 	clock_gettime(CLOCK_MONOTONIC, &t);
 
-	RtosMsgQueueInfoGet(rtmComm->hQueue_data_rcv, &rtmComm->InfoMsq_data_rcv);
 
-	//printf("Pending : %d\n", Info_fromNRTM.dwNumPending);
-	if (rtmComm->InfoMsq_data_rcv.dwNumPending > 0)
+	/* Try to get ownership */
+	while(1)
 	{
-		dwRetVal = RtosMsgQueueRead(rtmComm->hQueue_data_rcv, (UINT8*)&rcvSignalFromNRTM[0], MAX_ETHERCAT_MSG_SIZE, &dwNumData, 0);
-		if (dwRetVal != RTE_SUCCESS)
+		UINT32 dwRetVal = RtosInterlockedCompareExchange( &rtmComm->h.dwOwner, OWNER_RTOS, OWNER_FREE, &dwInitVal );
+		if( RTE_SUCCESS != dwRetVal )
 		{
-			printf("RQ : %d\n", dwRetVal);
-
+			printf("Interlocked function failed\n");
+		}
+		if( OWNER_FREE == dwInitVal )
+		{
+			/* We got the ownership */
+			break;
+		}
+	}
+	/*if (rtmComm->h.pFreeListStruct->c > 10)
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR,"L: %d F: %d\n",rtmComm->h.pList->c, rtmComm->h.pFreeListStruct->c));*/
+	//printf("Pending : %d\n", Info_fromNRTM.dwNumPending);
+	//printf("f : %p - %x - %x\n", rtmComm->h.pFreeListStruct, rtmComm->h.pFreeListStruct, *(rtmComm->h.pFreeListStruct));
+	if (rtmComm->h.pList->c > 0)
+	{
+#if 0
+		while (OWNER_FREE != rtmComm->h.dwOwner)
+		{
+			usleep(1);
+			/* We got the ownership */
+			break;
+		}
+		rtmComm->h.dwOwner = OWNER_RTOS;
+#endif
+		data_t * temp= NULL ;
+		temp=(data_t *)get_node_from_shm(&rtmComm->h,FROM_LIST | FROM_FRONT);
+		uint8_t val = 0;
+		if(NULL != temp)
+		{
+			put_node_in_list(&rtmComm->h,(node_sm_t *)temp,FROM_FREE_LIST|FROM_BACK);
+			//printf("\n %d",temp->data[0]);
+			val = temp->data[0];
+		}
+		else
+		{
+			printf("Temp is NULL!\n");
 		}
 		started = 1;
-		uint8_t val = rcvSignalFromNRTM[0];
+		//uint8_t *temp2=rtmComm->h.pStart;
+
+#if 0
+		uint64_t totalSize = sizeof(data_t);
+		uint8_t *tempPtr = NULL ;
+		memset(rtmComm->h.ptr,0,totalSize);
+		tempPtr = rtmComm->h.pStart;
+		list_in_shm_insert_node(rtmComm->h.pFreeListStruct,(uint8_t *)rtmComm->h.ptr,(node_sm_t *)(tempPtr),FROM_FRONT);
+#endif
 		if(tmpTake == 255)
 		{
 			if (val != 0)
@@ -272,6 +341,9 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 			started = 0;
 		}
 	}
+
+	VMF_MEMBARRIER( &rtmComm->h.dwOwner );
+	rtmComm->h.dwOwner = OWNER_FREE;
 
 	struct timespec t2;
 	OsMemset(&t2, 0, sizeof(struct timespec));
@@ -378,13 +450,14 @@ int main(int nArgc, char* ppArgv[])
 					JOBS_THREAD_STACKSIZE,
 					NULL);
 
+#if 0
 	pvJobTaskHandleMsq = OsCreateThread((EC_T_CHAR*)"RTM_TakeData",
 						takeDataFromMsq,
 						0,
 						RTM_THREAD_PRIO,
 						JOBS_THREAD_STACKSIZE,
 						NULL);
-
+#endif
 
 	ECMaster_main(nArgc, ppArgv);
 	while(bRun)

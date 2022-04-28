@@ -23,7 +23,8 @@ src/EcSlaveInfo.o: ../src/EcSlaveInfo.cpp ../src/EcDemoApp.h \
  ../src/RtosComm.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/RtosLib.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc\Linux/rteOs.h \
- C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h
+ C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h \
+ ../src/RtosShmLinkedList.h
 
 ../src/EcDemoApp.h:
 
@@ -88,3 +89,5 @@ C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/RtosLib.h:
 C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc\Linux/rteOs.h:
 
 C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h:
+
+../src/RtosShmLinkedList.h:

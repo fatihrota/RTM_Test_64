@@ -26,7 +26,8 @@ src/RtosMessage.o: ../src/RtosMessage.cpp ../src/RtosMessage.h \
  C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasError.h \
  C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasType.h \
  C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasSrvVersion.h \
- ../src/RTM_MainApp.h ../src/RTM_TestRun.h ../src/RTM_CompactController.h
+ ../src/RtosShmLinkedList.h ../src/RTM_MainApp.h ../src/RTM_TestRun.h \
+ ../src/RTM_CompactController.h
 
 ../src/RtosMessage.h:
 
@@ -97,6 +98,8 @@ C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SD
 C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasType.h:
 
 C:\Users\fatih\OneDrive\Masaüstü\EC-Master-V3.1-EC-WinRT-Linux-x86_64Bit-Eval\SDK\INC/AtEmRasSrvVersion.h:
+
+../src/RtosShmLinkedList.h:
 
 ../src/RTM_MainApp.h:
 

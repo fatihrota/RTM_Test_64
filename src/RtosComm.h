@@ -22,6 +22,7 @@
 #include <RtosLib.h>
 #include <stdint.h>
 #include "EcDemoApp.h"
+#include "RtosShmLinkedList.h"
 
 /*============================================================================*/
 /* Forward declarations                                                       */
@@ -38,8 +39,8 @@
 #define MSGQUEUE_DATA_NAME_SEND			TEXT("MsgQueueFromRTMtoNRTM")
 #define MSGQUEUE_DATA_NAME_RCV			TEXT("MsgQueueFromNRTMtoRTM")
 
-#define DATA_SEND_MSQ_SIZE			5000
-#define DATA_RCV_MSQ_SIZE			5000
+#define DATA_SEND_MSQ_SIZE			10000
+#define DATA_RCV_MSQ_SIZE			10000
 
 #define SERVER_OSID                 0 /* OS 0 = Rtos */
 #define SERVER_PORT                 7
@@ -114,10 +115,20 @@ public:
 	RTOSMSGQUEUE_INFO       InfoMsq_data_snd;	/* RTOS Message Queue information for outgoing messages */
 	RTOSMSGQUEUE_INFO       InfoMsq_data_rcv; /* RTOS Message Queue information for incoming messages */
 
+	list_in_shm_handle_t h = {0,};
+	INT32 createLinkedList(void);
+
 private:
 	RtosComm();
 	static RtosComm* instance;
 };
+
+typedef struct data
+{
+    uint32_t p_off ;
+    uint32_t n_off ;
+    uint8_t data[1000];
+}data_t;
 
 /******************************************************************************/
 /*   Copyright (C) Rota Teknik 2021,  All Rights Reserved. Confidential.      */

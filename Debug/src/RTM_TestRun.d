@@ -25,7 +25,8 @@ src/RTM_TestRun.o: ../src/RTM_TestRun.cpp ../src/RTM_TestRun.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc\Linux/rteOs.h \
  C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h \
  ../src/RTM_CompactController.h ../src/RTM_MainApp.h ../src/RtosComm.h \
- C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/RtosLib.h
+ C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/RtosLib.h \
+ ../src/RtosShmLinkedList.h
 
 ../src/RTM_TestRun.h:
 
@@ -98,3 +99,5 @@ C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/rteError.h:
 ../src/RtosComm.h:
 
 C:\Program\ Files\acontis_technologies\LxWin\SDK\Inc/RtosLib.h:
+
+../src/RtosShmLinkedList.h:

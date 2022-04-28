@@ -17,7 +17,8 @@ CPP_SRCS += \
 ../src/RTM_MainApp.cpp \
 ../src/RTM_TestRun.cpp \
 ../src/RtosComm.cpp \
-../src/RtosMessage.cpp 
+../src/RtosMessage.cpp \
+../src/RtosShmLinkedList.cpp 
 
 OBJS += \
 ./src/EcDemoApp.o \
@@ -33,7 +34,8 @@ OBJS += \
 ./src/RTM_MainApp.o \
 ./src/RTM_TestRun.o \
 ./src/RtosComm.o \
-./src/RtosMessage.o 
+./src/RtosMessage.o \
+./src/RtosShmLinkedList.o 
 
 CPP_DEPS += \
 ./src/EcDemoApp.d \
@@ -49,7 +51,8 @@ CPP_DEPS += \
 ./src/RTM_MainApp.d \
 ./src/RTM_TestRun.d \
 ./src/RtosComm.d \
-./src/RtosMessage.d 
+./src/RtosMessage.d \
+./src/RtosShmLinkedList.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
