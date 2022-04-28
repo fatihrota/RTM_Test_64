@@ -259,22 +259,8 @@ INT32 RtosComm::createSocket(void)
 /******************************************************************************/
 INT32 RtosComm::createLinkedList(void)
 {
-	list_in_shm_init(&h, sizeof(data_t), DATA_RCV_MSQ_SIZE, 0);
+	ll.listShm_Init(&ll.defaultList, sizeof(ecatMsg),DATA_RCV_MSQ_SIZE,0);
 	return 0;
-/*
-	data_t * temp = NULL;
-	for (int i = 0; i < 10; i++)
-	{
-		temp = (data_t *)get_node_from_shm(&h, FROM_FREE_LIST);
-		if (NULL != temp)
-		{
-			temp->data[0] = i;
-			put_node_in_list(&h, (node_sm_t *)temp, FROM_LIST | FROM_LIST);
-		}
-		printf("Free List C : %d - %d ", h.pFreeListStruct->c, h.pFreeListStruct->mc);
-		printf("List C : %d - %d ", h.pList->c, h.pList->mc);
-	}
-	*/
 }
 /**@}*/
 /******************************************************************************/

@@ -1,3 +1,24 @@
+#pragma once
+/******************************************************************************
+ *
+ *   Copyright (C) Rota Teknik 2019 All Rights Reserved. Confidential
+ *
+ **************************************************************************//**
+ * @file        RtosShmLinkedList.h
+ * @brief       RtosShmLinkedList is class to create and manage double linked list
+ * 				on shared memory.
+ *
+ * @author      Mehmet Fatih Özay
+ * @date        2022-04-28
+ *
+ * @ingroup     RtosShmLinkedList
+ * @{
+ *****************************************************************************/
+
+ /*============================================================================*/
+ /* Includes                                                                   */
+ /*============================================================================*/
+
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include "stdint.h"
@@ -8,34 +29,15 @@
 #include <sys/stat.h>
 #include "stdio.h"
 #include <string.h>
+#include <RtosLib.h>
 
+/*============================================================================*/
+/* Forward declarations                                                       */
+/*============================================================================*/
 
-typedef struct sm_list_s
-{
-  uint32_t n_off;
-  uint32_t p_off;
-  uint32_t c ;
-  uint32_t mc;
-} sm_list_t;
-
-
-typedef struct node_sm_s
-{
-    uint32_t p_off ;
-    uint32_t n_off ;
-}node_sm_t ;
-
-typedef struct list_in_shm_handle_s {
-   uint32_t shmid;
-   uint64_t size;
-   uint32_t  dwOwner;
-   void * ptr ;
-   sm_list_t *pFreeListStruct;
-   sm_list_t *pList;
-   uint8_t *pStart;
-
-}list_in_shm_handle_t;
-
+/*============================================================================*/
+/* Constants and macros                                                       */
+/*============================================================================*/
 
 #define GET_OFFSET(baseptr,ptr) ((uint8_t *)ptr-(uint8_t *)baseptr)
 #define GET_PTR(baseptr,offset) ((uint8_t *)baseptr+offset)
@@ -44,10 +46,66 @@ typedef struct list_in_shm_handle_s {
 #define FROM_FRONT     0x10
 #define FROM_BACK      0x20
 
-int shmTest();
-int list_in_shm_init(list_in_shm_handle_t * h, uint32_t size,uint32_t num,uint8_t init );
-int list_in_shm_insert_node(sm_list_t * plst, uint8_t * basePtr , node_sm_t * node ,uint8_t front);
-node_sm_t *list_in_shm_get_node(sm_list_t * plst,uint8_t * basePtr,uint8_t front);
-node_sm_t * get_node_from_shm(list_in_shm_handle_t * h,uint8_t flags );
-int put_node_in_list(list_in_shm_handle_t * h,node_sm_t *node,uint8_t flags);
-void list_in_shm_finish(list_in_shm_handle_t * h);
+
+/*============================================================================*/
+/* Type definitions                                                           */
+/*============================================================================*/
+
+/*============================================================================*/
+/* Global data                                                                */
+/*============================================================================*/
+
+/*============================================================================*/
+/* Declarations                                                               */
+/*============================================================================*/
+
+
+class RtosShmLinkedList
+{
+public:
+	RtosShmLinkedList(){};
+	~RtosShmLinkedList(){};
+
+	typedef struct
+	{
+		UINT32 nextOff;
+		UINT32 prevOff;
+		UINT32 count ;
+	}linkedListShm;
+
+	typedef struct
+	{
+		UINT32 prevOff;
+		UINT32 nextOff;
+	}nodeShm;
+
+	typedef struct
+	{
+		UINT32 shmid;
+		UINT64 size;
+		UINT32  dwOwner;
+	    VOID* ptr ;
+	    linkedListShm *pFreeListStruct;
+	    linkedListShm *pList;
+	    UINT8 *pStart;
+
+	}listShm;
+
+	listShm defaultList;
+
+	INT32 shmTest();
+	INT32 listShm_Init(listShm * listPtr, UINT32 size, UINT32 num, UINT8 init);
+	INT32 listShm_InsertNode(linkedListShm * plst, UINT8 * basePtr, nodeShm * node, UINT8 front);
+	nodeShm* listShm_GetNode(linkedListShm * plst, UINT8 * basePtr, UINT8 front);
+	nodeShm* getNodeFromShm(listShm * listPtr, UINT8 flags);
+	INT32 putNodeToShm(listShm * listPtr, nodeShm *node, UINT8 flags);
+	void listShm_Finish(listShm * listPtr);
+
+private:
+
+};
+
+
+/******************************************************************************/
+/*   Copyright (C) Rota Teknik 2021,  All Rights Reserved. Confidential.      */
+/******************************************************************************/

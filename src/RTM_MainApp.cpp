@@ -179,24 +179,7 @@ EC_T_VOID mainRun(EC_T_VOID* pvAppContext)
 	rtmComm->libInit();
 
 	rtmComm->createLinkedList();
-#if 0
-	list_in_shm_handle_t h = {0,};
-	list_in_shm_init(&h, sizeof(data_t), 10, 0);
 
-	data_t * temp= NULL ;
-	for(int i=0;i<10;i++)
-	{
-		temp=(data_t *)get_node_from_shm(&h,FROM_LIST | FROM_FRONT);
-		if(NULL != temp)
-		{
-			printf("\n %d %d",i,temp->data[0]);
-		}
-		printf("Free List C : %d - %d ", h.pFreeListStruct->c, h.pFreeListStruct->mc);
-		printf("List C : %d - %d ", h.pList->c, h.pList->mc);
-	}
-#endif
-
-	//shmTest();
 	//RtosTimeSyncStart();
 	//rtmComm->create_Data_ReceiveMessageQueue();
 	//rtmComm->create_Data_SendMessageQueue();
@@ -270,10 +253,10 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 	/* Try to get ownership */
 	while(1)
 	{
-		UINT32 dwRetVal = RtosInterlockedCompareExchange( &rtmComm->h.dwOwner, OWNER_RTOS, OWNER_FREE, &dwInitVal );
+		UINT32 dwRetVal = RtosInterlockedCompareExchange( &rtmComm->ll.defaultList.dwOwner, OWNER_RTOS, OWNER_FREE, &dwInitVal );
 		if( RTE_SUCCESS != dwRetVal )
 		{
-			printf("Interlocked function failed\n");
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR,"Interlocked function failed\n"));
 		}
 		if( OWNER_FREE == dwInitVal )
 		{
@@ -281,44 +264,25 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 			break;
 		}
 	}
-	/*if (rtmComm->h.pFreeListStruct->c > 10)
-		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR,"L: %d F: %d\n",rtmComm->h.pList->c, rtmComm->h.pFreeListStruct->c));*/
-	//printf("Pending : %d\n", Info_fromNRTM.dwNumPending);
-	//printf("f : %p - %x - %x\n", rtmComm->h.pFreeListStruct, rtmComm->h.pFreeListStruct, *(rtmComm->h.pFreeListStruct));
-	if (rtmComm->h.pList->c > 0)
+
+	/*if (rtmComm->ll.defaultList.pFreeListStruct->count > 10)
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR,"L: %d F: %d\n", rtmComm->ll.defaultList.pList->count, rtmComm->ll.defaultList.pFreeListStruct->count));*/
+	if (rtmComm->ll.defaultList.pList->count > 0 && rtmComm->ll.defaultList.pFreeListStruct->count >= DATA_RCV_MSQ_SIZE)
 	{
-#if 0
-		while (OWNER_FREE != rtmComm->h.dwOwner)
-		{
-			usleep(1);
-			/* We got the ownership */
-			break;
-		}
-		rtmComm->h.dwOwner = OWNER_RTOS;
-#endif
-		data_t * temp= NULL ;
-		temp=(data_t *)get_node_from_shm(&rtmComm->h,FROM_LIST | FROM_FRONT);
-		uint8_t val = 0;
+		ecatMsg * temp= NULL ;
+		temp=(ecatMsg *)rtmComm->ll.getNodeFromShm(&rtmComm->ll.defaultList,FROM_LIST | FROM_FRONT);
+		UINT8 val = 0;
 		if(NULL != temp)
 		{
-			put_node_in_list(&rtmComm->h,(node_sm_t *)temp,FROM_FREE_LIST|FROM_BACK);
-			//printf("\n %d",temp->data[0]);
 			val = temp->data[0];
+			rtmComm->ll.putNodeToShm(&rtmComm->ll.defaultList, (RtosShmLinkedList::nodeShm *)temp, FROM_FREE_LIST | FROM_BACK );
 		}
 		else
 		{
-			printf("Temp is NULL!\n");
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR,"Temp is NULL!\n"));
 		}
 		started = 1;
-		//uint8_t *temp2=rtmComm->h.pStart;
 
-#if 0
-		uint64_t totalSize = sizeof(data_t);
-		uint8_t *tempPtr = NULL ;
-		memset(rtmComm->h.ptr,0,totalSize);
-		tempPtr = rtmComm->h.pStart;
-		list_in_shm_insert_node(rtmComm->h.pFreeListStruct,(uint8_t *)rtmComm->h.ptr,(node_sm_t *)(tempPtr),FROM_FRONT);
-#endif
 		if(tmpTake == 255)
 		{
 			if (val != 0)
@@ -329,9 +293,9 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 		else if(tmpTake != (val-1))
 		{
 			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "DE : %d - %d\n",tmpTake,val));
+			EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR,"L: %d F: %d\n", rtmComm->ll.defaultList.pList->count, rtmComm->ll.defaultList.pFreeListStruct->count));
 		}
 		tmpTake = val;
-		//printf("D: %d\n", rcvSignalFromNRTM[0]);
 	}
 	else
 	{
@@ -342,8 +306,8 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 		}
 	}
 
-	VMF_MEMBARRIER( &rtmComm->h.dwOwner );
-	rtmComm->h.dwOwner = OWNER_FREE;
+	VMF_MEMBARRIER( &rtmComm->ll.defaultList.dwOwner );
+	rtmComm->ll.defaultList.dwOwner = OWNER_FREE;
 
 	struct timespec t2;
 	OsMemset(&t2, 0, sizeof(struct timespec));
@@ -352,7 +316,7 @@ EC_T_VOID RTM_MainApp::takeDataFromMsgQueue(EC_T_VOID)
 
 	long entryNsec = ((t2.tv_sec-t.tv_sec) * 1000000000) + (t2.tv_nsec-t.tv_nsec);
 
-	if (entryNsec > 100000)
+	if (entryNsec > 10000)
 		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Q: %ld\n", entryNsec));
 
 }

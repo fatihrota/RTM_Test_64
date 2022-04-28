@@ -1,18 +1,57 @@
-/*
- * RtosShmLinkedList.cpp
+/******************************************************************************
  *
- *  Created on: Apr 26, 2022
- *      Author: fatih
- */
+ *   Copyright (C) Rota Teknik 2019 All Rights Reserved. Confidential
+ *
+ **************************************************************************//**
+ * @file        RtosShmLinkedList.cpp
+ * @brief       Implementation of the RtosShmLinkedList class of the library.
+ *
+ * @author      Mehmet Fatih Özay
+ * @date        2022-04-28
+ *
+ * @ingroup     RtosShmLinkedList
+ * @{
+ *****************************************************************************/
 
+ /*============================================================================*/
+ /* Includes                                                                   */
+ /*============================================================================*/
+
+#ifndef pEcLogParms
+#define pEcLogParms G_pEcLogParms
+#endif
 #include "RtosShmLinkedList.h"
-#include <RtosLib.h>
+#include "EcLogging.h"
+//#include <RtosLib.h>
+
+/*============================================================================*/
+/* Forward declarations                                                       */
+/*============================================================================*/
+
+/*============================================================================*/
+/* Constants and macros                                                       */
+/*============================================================================*/
 
 #define SHMDEMO_SHMNAME             "UserShm"
 
-int shmTest()
+/*============================================================================*/
+/* Type definitions                                                           */
+/*============================================================================*/
+
+/*============================================================================*/
+/* Global data                                                                */
+/*============================================================================*/
+
+/*============================================================================*/
+/* Module global data                                                         */
+/*============================================================================*/
+
+/*============================================================================*/
+/* Implementation of functions                                                */
+/*============================================================================*/
+
+INT32 RtosShmLinkedList::shmTest()
 {
-	UINT32  dwRetVal;
 	UINT32  dwRes;
 	UINT32  dwShmId;
 	UINT32  dwShmSizeTotal;
@@ -20,225 +59,237 @@ int shmTest()
 	dwRes = RtosGetIdByName(SHMDEMO_SHMNAME, RTOS_ID_SHM, &dwShmId);
 	if (RTE_SUCCESS != dwRes)
 	{
-		printf("Error (0x%X) querying  shared memory id. Please ensure a shared memory with this name is configured for read and write by any OS.\r\n", dwRes);
-		dwRetVal = dwRes;
-		return -1;
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Error (0x%X) querying  shared memory id. Please ensure "
+				"a shared memory with this name is configured for read and write by any OS.\r\n", dwRes));
+		return dwRes;
 	}
-	printf("Ok - id %u\r\n", dwShmId);
+	EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "Ok - id %u\r\n", dwShmId));
 
 	dwRes = RtosShmTotalSizeGet(dwShmId, &dwShmSizeTotal);
 	if (RTE_SUCCESS != dwRes)
 	{
-		printf("Error (0x%X)\r\n", dwRes);
-		dwRetVal = dwRes;
-		return -1;
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Error (0x%X)\r\n", dwRes));
+		return dwRes;
 	}
-	printf("Ok - %u (0x%X) bytes\r\n", dwShmSizeTotal, dwShmSizeTotal);
+	EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "Ok - %u (0x%X) bytes\r\n", dwShmSizeTotal, dwShmSizeTotal));
 
 	UINT32  dwShmSizeRequested;
 	UINT32  dwShmSizeGranted;
 	VOID*   pvShmAddr = NULL;
 
-	volatile uint32_t *dataptr = NULL;
-	uint32_t data;
+	volatile UINT32 *dataptr = NULL;
+	UINT32 data;
 	dwShmSizeRequested = sizeof(data);
 
 	dwRes = RtosShmAddrGet(dwShmId, dwShmSizeRequested, &dwShmSizeGranted, &pvShmAddr);
 	if (RTE_SUCCESS != dwRes)
 	{
-		printf("Error (0x%X) requesting %u bytes\r\n",
-			dwRes, dwShmSizeRequested);
-		dwRetVal = dwRes;
-		return -1;
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Error (0x%X) requesting %u bytes\r\n",
+				dwRes, dwShmSizeRequested));
+		return dwRes;
 	}
-	printf("OK - granted %u bytes\r\n", dwShmSizeGranted);
+	EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "OK - granted %u bytes\r\n", dwShmSizeGranted));
 
-	dataptr = (uint32_t*)pvShmAddr;
-	//*dataptr = 88;
-	printf("DATA : %d\n", *dataptr);
+	dataptr = (UINT32*)pvShmAddr;
+	EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "DATA : %d\n", *dataptr));
 }
 
-int list_in_shm_init(list_in_shm_handle_t * h,uint32_t size,uint32_t num,uint8_t init )
+/******************************************************************************/
+INT32 RtosShmLinkedList::listShm_Init(listShm * listPtr, UINT32 size, UINT32 num, UINT8 init)
 {
 	UINT32  dwRes;
-    uint64_t totalSize=0;
-    uint32_t i =0;
-    uint8_t *temp = NULL ;
+	UINT64 totalSize=0;
+	UINT32 i =0;
+	UINT8 *temp = NULL ;
 
-    totalSize=(size * num)+sizeof(sm_list_t)+sizeof(sm_list_t);
+    totalSize=(size * num)+sizeof(linkedListShm)+sizeof(linkedListShm);
 
-    dwRes = RtosGetIdByName( SHMDEMO_SHMNAME, RTOS_ID_SHM, &h->shmid );
-    //h->shmid = shmget(h->key,totalSize,IPC_CREAT);
+    dwRes = RtosGetIdByName( SHMDEMO_SHMNAME, RTOS_ID_SHM, &listPtr->shmid );
     if (RTE_SUCCESS != dwRes)
     {
-    	printf("\nRtosGetIdByName failed errono\n");
+    	EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "Error (0x%X) querying  shared memory id. Please ensure "
+    					"a shared memory with this name is configured for read and write by any OS.\r\n", dwRes));
+    	return dwRes;
+    }
+
+    UINT32 sizeReturned  = 0;
+    listPtr->size=totalSize;
+
+    printf("!!!!!!!TotalSize : %d\n", listPtr->size);
+    EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "TotalSize : %d\n", listPtr->size));
+
+    dwRes = RtosShmAddrGet( listPtr->shmid, listPtr->size, &sizeReturned, &listPtr->ptr );
+    if (RTE_SUCCESS != dwRes)
+    {
+    	EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "RtosShmAddrGet failed errono\n"));
+
     	return -1;
     }
 
-    uint32_t sizeReturned  = 0;
-    h->size=totalSize;
-    printf("TotalSize : %d\n", h->size);
-    dwRes = RtosShmAddrGet( h->shmid, h->size, &sizeReturned, &h->ptr );
-    printf("sizeReturned : %d\n", sizeReturned);
-    //h->ptr=(uint8_t *)shmat(h->shmid,NULL,0);
-    if (RTE_SUCCESS != dwRes)
-    {
-    	printf("\RtosShmAddrGet failed errono\n");
-    	return -1;
-    }
+    EcLogMsg(EC_LOG_LEVEL_INFO, (pEcLogContext, EC_LOG_LEVEL_INFO, "sizeReturned : %d\n", sizeReturned));
 
 
-    h->pFreeListStruct=(sm_list_t*)(h->ptr);
-    h->pList=(sm_list_t*)((uint8_t*)(h->pFreeListStruct)+sizeof(sm_list_t));
-    h->pStart=(uint8_t*)((uint8_t*)(h->pList)+sizeof(sm_list_t));
+    listPtr->pFreeListStruct=(linkedListShm*)(listPtr->ptr);
+    listPtr->pList=(linkedListShm*)((UINT8*)(listPtr->pFreeListStruct)+sizeof(linkedListShm));
+    listPtr->pStart=(UINT8*)((UINT8*)(listPtr->pList)+sizeof(linkedListShm));
 
     if(init)
     {
-         memset(h->ptr,0,totalSize);
-         temp=h->pStart;
+         memset(listPtr->ptr,0,totalSize);
+         temp=listPtr->pStart;
          for(i=0;i<num;i++)
          {
-            list_in_shm_insert_node(h->pFreeListStruct,(uint8_t *)h->ptr,(node_sm_t *)(temp+i*size),FROM_FRONT);
+        	 listShm_InsertNode(listPtr->pFreeListStruct,(UINT8 *)listPtr->ptr,(nodeShm *)(temp+i*size),FROM_FRONT);
          }
     }
     return 0 ;
 }
 
-int list_in_shm_insert_node(sm_list_t * plst, uint8_t * basePtr, node_sm_t * node, uint8_t front)
+/******************************************************************************/
+int RtosShmLinkedList::listShm_InsertNode(linkedListShm * plst, UINT8 * basePtr, nodeShm * node, UINT8 front)
 {
-	node_sm_t* temp = NULL;
+	nodeShm* temp = NULL;
 
 	if (NULL == plst || NULL == basePtr || NULL == node)
 	{
-		printf("list_in_shm_insert_node plst is null");
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "listShm_InsertNode linkedListShm is null or nodeShm is null\n"));
 		return -1;
 	}
 
 
-	if (0 == plst->p_off && 0 == plst->n_off)
+	if (0 == plst->prevOff && 0 == plst->nextOff)
 	{
-		plst->p_off = GET_OFFSET(basePtr, node);
-		plst->n_off = GET_OFFSET(basePtr, node);
-		plst->c = 1;
+		plst->prevOff = GET_OFFSET(basePtr, node);
+		plst->nextOff = GET_OFFSET(basePtr, node);
+		plst->count = 1;
 		return 0;
 	}
 
 	if (FROM_FRONT & front)
 	{
-		temp = (node_sm_t*)(GET_PTR(basePtr, plst->n_off));
-		node->n_off = plst->n_off;
-		temp->p_off = GET_OFFSET(basePtr, node);
-		node->p_off = 0;
-		plst->n_off = GET_OFFSET(basePtr, node);
-		(plst->c)++;
+		temp = (nodeShm*)(GET_PTR(basePtr, plst->nextOff));
+		node->nextOff = plst->nextOff;
+		temp->prevOff = GET_OFFSET(basePtr, node);
+		node->prevOff = 0;
+		plst->nextOff = GET_OFFSET(basePtr, node);
+		(plst->count)++;
 	}
 	else
 	{
-		temp = (node_sm_t*)(GET_PTR(basePtr, plst->p_off));
-		temp->n_off = GET_OFFSET(basePtr, node);
-		node->p_off = plst->p_off;
-		node->n_off = 0;
-		plst->p_off = GET_OFFSET(basePtr, node);
-		(plst->c)++;
+		temp = (nodeShm*)(GET_PTR(basePtr, plst->prevOff));
+		temp->nextOff = GET_OFFSET(basePtr, node);
+		node->prevOff = plst->prevOff;
+		node->nextOff = 0;
+		plst->prevOff = GET_OFFSET(basePtr, node);
+		(plst->count)++;
 	}
 	return 0;
 }
 
-node_sm_t *list_in_shm_get_node(sm_list_t * plst, uint8_t * basePtr, uint8_t front)
+/******************************************************************************/
+RtosShmLinkedList::nodeShm* RtosShmLinkedList::listShm_GetNode(linkedListShm * plst, UINT8 * basePtr, UINT8 front)
 {
-	node_sm_t * temp = NULL;
-	node_sm_t * temp2 = NULL;
-	uint32_t offtemp = 0;
-	if (NULL == plst || NULL == basePtr || (0 == plst->c))
+	nodeShm * temp = NULL;
+	nodeShm * temp2 = NULL;
+	UINT32 offtemp = 0;
+	if (NULL == plst || NULL == basePtr || (0 == plst->count))
 	{
-		printf("list_in_shm_get_node plst null ");
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "listShm_GetNode linkedListShm is null\n"));
 		return NULL;
 	}
 
-	if (1 == plst->c)
+	if (1 == plst->count)
 	{
-		temp = (node_sm_t *)(GET_PTR(basePtr, plst->n_off));
-		plst->c = 0;
-		plst->n_off = 0;
-		plst->p_off = 0;
+		temp = (nodeShm *)(GET_PTR(basePtr, plst->nextOff));
+		plst->count = 0;
+		plst->nextOff = 0;
+		plst->prevOff = 0;
 		return temp;
 	}
 	if (FROM_FRONT & front)
 	{
-		temp = (node_sm_t *)(GET_PTR(basePtr, plst->n_off));
-		offtemp = temp->n_off;
-		plst->n_off = offtemp;
-		temp2 = (node_sm_t *)(GET_PTR(basePtr, plst->n_off));
-		temp2->p_off = 0;
-		(plst->c)--;
+		temp = (nodeShm *)(GET_PTR(basePtr, plst->nextOff));
+		offtemp = temp->nextOff;
+		plst->nextOff = offtemp;
+		temp2 = (nodeShm *)(GET_PTR(basePtr, plst->nextOff));
+		temp2->prevOff = 0;
+		(plst->count)--;
 	}
 	else
 	{
-		temp = (node_sm_t *)(GET_PTR(basePtr, plst->p_off));
-		offtemp = temp->p_off;
-		plst->p_off = offtemp;
-		temp2 = (node_sm_t *)(GET_PTR(basePtr, offtemp));
-		temp2->n_off = 0;
-		(plst->c)--;
+		temp = (nodeShm *)(GET_PTR(basePtr, plst->prevOff));
+		offtemp = temp->prevOff;
+		plst->prevOff = offtemp;
+		temp2 = (nodeShm *)(GET_PTR(basePtr, offtemp));
+		temp2->nextOff = 0;
+		(plst->count)--;
 	}
 
 	return temp;
 }
 
-node_sm_t * get_node_from_shm(list_in_shm_handle_t * h, uint8_t flags)
+/******************************************************************************/
+RtosShmLinkedList::nodeShm* RtosShmLinkedList::getNodeFromShm(listShm * listPtr, UINT8 flags)
 {
-	sm_list_t *lst = NULL;
-	node_sm_t * temp = NULL;
-	int ret = 0;
-	if (NULL == h)
+	linkedListShm *lst = NULL;
+	nodeShm * temp = NULL;
+	INT32 ret = 0;
+	if (NULL == listPtr)
 	{
-		printf("Get node from shm h is NULL\n");
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "getNodeFromShm listShm is NULL\n"));
 		return NULL;
 	}
 
 	if (FROM_FREE_LIST & flags)
 	{
-		lst = h->pFreeListStruct;
+		lst = listPtr->pFreeListStruct;
 	}
 	else
 	{
-		lst = h->pList;
+		lst = listPtr->pList;
 	}
-	if (0 == lst || 0 == lst->c)
+	if (0 == lst || 0 == lst->count)
 	{
-		printf("Get node from shm lst is NULL\n");
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "getNodeFromShm linkedListShm is NULL\n"));
 		return NULL;
 	}
-	temp = list_in_shm_get_node(lst, (uint8_t *)h->ptr, flags);
+	temp = listShm_GetNode(lst, (UINT8 *)listPtr->ptr, flags);
 	return temp;
 }
 
-int put_node_in_list(list_in_shm_handle_t * h, node_sm_t *node, uint8_t flags)
+/******************************************************************************/
+INT32 RtosShmLinkedList::putNodeToShm(listShm * listPtr, nodeShm *node, UINT8 flags)
 {
-	sm_list_t *lst = NULL;
+	linkedListShm *lst = NULL;
 	int ret = 0;
-	if (NULL == h || NULL == node)
+	if (NULL == listPtr || NULL == node)
 	{
-		printf("put_node_in_list node is null");
+		EcLogMsg(EC_LOG_LEVEL_ERROR, (pEcLogContext, EC_LOG_LEVEL_ERROR, "putNodeToShm listShm is NULL\n"));
 		return -1;
 	}
 
 	if (FROM_FREE_LIST & flags)
 	{
-		lst = h->pFreeListStruct;
+		lst = listPtr->pFreeListStruct;
 	}
 	else
 	{
-		lst = h->pList;
+		lst = listPtr->pList;
 	}
 
-	ret = list_in_shm_insert_node(lst, (uint8_t *)h->ptr, node, flags);
+	ret = listShm_InsertNode(lst, (UINT8 *)listPtr->ptr, node, flags);
 	return 0;
 }
 
-void list_in_shm_finish(list_in_shm_handle_t * h)
+/******************************************************************************/
+void RtosShmLinkedList::listShm_Finish(listShm * listPtr)
 {
 
 }
+
+/**@}*/
+/******************************************************************************/
+/*   Copyright (C) Rota Teknik 2021,  All Rights Reserved. Confidential.      */
+/******************************************************************************/
 
 

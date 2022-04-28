@@ -115,7 +115,7 @@ public:
 	RTOSMSGQUEUE_INFO       InfoMsq_data_snd;	/* RTOS Message Queue information for outgoing messages */
 	RTOSMSGQUEUE_INFO       InfoMsq_data_rcv; /* RTOS Message Queue information for incoming messages */
 
-	list_in_shm_handle_t h = {0,};
+	RtosShmLinkedList ll;
 	INT32 createLinkedList(void);
 
 private:
@@ -125,10 +125,10 @@ private:
 
 typedef struct data
 {
-    uint32_t p_off ;
-    uint32_t n_off ;
-    uint8_t data[1000];
-}data_t;
+    UINT32 p_off ;
+    UINT32 n_off ;
+    UINT8 data[MAX_ETHERCAT_MSG_SIZE];
+}ecatMsg;
 
 /******************************************************************************/
 /*   Copyright (C) Rota Teknik 2021,  All Rights Reserved. Confidential.      */
